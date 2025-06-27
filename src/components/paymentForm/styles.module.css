@@ -1,0 +1,47 @@
+@import "../registrationForm/styles.module.css";
+
+.paymentMethodSelector {
+    display: flex;
+    margin-bottom: 20px;
+    border: 1px solid #444;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.paymentMethod {
+    flex: 1;
+    padding: 15px;
+    background-color: transparent;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 1rem;
+    border-right: 1px solid #444;
+}
+
+.paymentMethod:last-child {
+    border-right: none;
+}
+
+.paymentMethod.active {
+    background-color: #00aaff;
+    color: #fff;
+}
+
+.paymentNote {
+    text-align: center;
+    color: #ccc;
+    margin-bottom: 20px;
+}
+
+.paymentForm {
+    display: none;
+}
+
+.paymentForm.active {
+    display: block;
+} 

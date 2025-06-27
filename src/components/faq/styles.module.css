@@ -1,0 +1,49 @@
+.downSection {
+    width: 60%;
+    margin-top: 20px;
+}
+
+.guaranteeSection {
+    background-color: #1a1a1a;
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+}
+
+.guaranteeBadge {
+    width: 100px;
+    height: 100px;
+    background-color: #333;
+    border-radius: 50%;
+    margin-right: 20px;
+    background-image: url('../../../assets/img/seloGarantia.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.guaranteeInfo {
+    flex-grow: 1;
+}
+
+.guaranteeQuestion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 0;
+    border-bottom: 1px solid #333;
+    cursor: pointer;
+}
+
+.guaranteeQuestion:last-child {
+    border-bottom: none;
+}
+
+.guaranteeQuestion span {
+    color: #fff;
+}
+
+.arrow {
+    color: #00aaff;
+} 

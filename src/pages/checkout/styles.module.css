@@ -1,0 +1,704 @@
+@font-face {
+    font-family: 'Poppins Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Poppins Regular'), url('/src/assets/font/poppins/Poppins-Regular.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Poppins Bold';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Poppins Bold'), url('/src/assets/font/poppins/Poppins-Bold.woff') format('woff');
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins Regular', sans-serif;
+}
+
+body, html {
+    height: 100%;
+    font-family: 'Poppins Regular', sans-serif;
+    background-color: #fff;
+    color: #333;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+body.noScroll {
+    overflow: hidden;
+}
+
+.mainContainer {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 80px 1fr;
+    grid-template-areas:
+        "header"
+        "content";
+    min-height: 100vh;
+    width: 100vw;
+}
+
+.mainHeader {
+    grid-area: header;
+    background-color: #121212;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 40px 0px 0px;
+    height: 80px;
+    z-index: 10;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+#logo {
+    background-image: url('../../assets/img/df.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 300px;
+    height: 100%;
+    transform: scale(1.5);
+}
+
+.checkoutContainer {
+    grid-area: content;
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    padding: 40px;
+    max-width: 1200px;
+    margin: 0 auto;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+
+.checkoutForm {
+    flex: 1;
+    width: 600px;
+    height: fit-content;
+    min-height: 600px;
+    background-color: #F7FAFC;
+    border-radius: 8px;
+    padding: 50px 80px 30px 80px;
+    display: flex;
+    flex-direction: column;
+}
+
+.orderSummary {
+    flex: 0 0 400px;
+    background-color: #F7FAFC;
+    border-radius: 8px;
+    padding: 30px;
+    height: auto;
+    height: 600px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.checkoutSteps {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 30px;
+    position: relative;
+    width: 100%;
+}
+
+.checkoutSteps::before {
+    display: none;
+}
+
+.step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 2;
+    color: #aaa;
+    font-size: 14px;
+    text-align: center;
+}
+
+.step.active {
+    color: #007bff;
+}
+
+.stepNumber {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    color: #fff;
+    font-size: 14px;
+    transition: all 0.3s ease-in-out;
+    border: 2px solid #e0e0e0;
+}
+
+.step.active .stepNumber {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.stepConnector {
+    flex: 1;
+    max-width: 120px;
+    height: 2px;
+    background-color: #e0e0e0;
+    transition: background-color 0.3s ease-in-out;
+}
+
+.stepConnector.active {
+    background-color: #007bff;
+}
+
+.formSection h2 {
+    font-size: 18px;
+    margin-bottom: 20px;
+    font-family: 'Poppins Bold', sans-serif;
+}
+
+.formGroup {
+    margin-bottom: 20px;
+}
+
+.formGroup label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #666;
+}
+
+.inputWrapper {
+    position: relative;
+}
+
+.inputWrapper input {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.validIcon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    background-color: #4CAF50;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    display: none;
+}
+
+.inputWrapper.valid .validIcon {
+    display: flex;
+}
+
+.validIcon::before {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.formRow {
+    display: flex;
+    gap: 15px;
+}
+
+.formRow .formGroup {
+    flex: 1;
+}
+
+.formStep {
+    display: none;
+    flex: 1;
+}
+
+.formStep.active {
+    display: block;
+}
+
+.formSection {
+    flex: 1;
+}
+
+.paymentMethodSelector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.paymentMethod {
+    width: 120px;
+    padding: 16px 2px;
+    font-size: 15px;
+    font-weight: bold;
+    border-radius: 12px;
+    cursor: pointer;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    color: #0070E1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.paymentMethod:hover {
+    background-color: #f0f8ff;
+}
+
+.paymentMethod.active {
+    background-color: #0070E1;
+    color: white;
+    border-color: #0070E1;
+}
+
+.paymentMethod.active:hover {
+    background-color: #0069d9;
+}
+
+.paymentForm {
+    display: none;
+}
+
+.paymentForm.active {
+    display: block;
+}
+
+.formRow select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 15px center;
+    background-size: 1em;
+    color: #666;
+}
+
+.paymentNote {
+    text-align: center;
+    color: #666;
+    font-size: 14px;
+    margin-bottom: 20px;
+}
+
+.formFooter {
+    margin-top: 30px;
+    padding-top: 20px;
+    border-top: 1px solid #E2E8F0;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.formActions {
+    margin-top: 30px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.btnPrimary {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+.btnPrimary:hover {
+    background-color: #0069d9;
+}
+
+.orderSummary h2 {
+    font-size: 18px;
+    margin-bottom: 15px;
+    font-family: 'Poppins Bold', sans-serif;
+}
+
+.productInfo {
+    display: flex;
+    margin-bottom: 15px;
+    align-items: center;
+    flex-direction: column;
+}
+
+.productImage {
+    flex: 0 0 100px;
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-right: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #121212;
+}
+
+.productImage img {
+    width: 70%;
+    height: auto;
+}
+
+.productDetails {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.detailsLeft {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+.productDetails h3 {
+    font-size: 13px;
+    margin-bottom: 5px;
+    font-family: 'Poppins Regular', sans-serif;
+}
+
+.productQuantity {
+    display: flex;
+    align-items: center;
+    margin-top: 5px;
+}
+
+.qtyBtn {
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    background-color: #E2E8F0;
+    border: 1px solid #E2E8F0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #718096;
+}
+
+.qtyValue {
+    margin: 0 8px;
+    font-size: 14px;
+}
+
+.productPrice {
+    font-family: 'Poppins Bold', sans-serif;
+}
+
+.couponSection {
+    margin-bottom: 15px;
+}
+
+.couponSection label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 10px;
+}
+
+.couponInput {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+
+.couponInput input {
+    flex: 1;
+    padding: 10px 15px;
+    border: 1px solid #E2E8F0;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #E2E8F0;
+}
+
+.btnApply {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 0 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.orderDetails {
+    margin-bottom: 15px;
+    padding-top: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.orderRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.deliveryInfo {
+    font-size: 11px;
+    color: #666;
+    text-align: right;
+    max-width: 200px;
+    font-family: 'Poppins Bold', sans-serif;
+}
+
+.orderTotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 10px;
+    margin-bottom: 10px;
+    border-top: 1px solid #E2E8F0;
+}
+
+.orderTotal h3 {
+    font-size: 15px;
+    font-family: 'Poppins Bold', sans-serif;
+}
+
+.totalPrice {
+    font-size: 16px;
+    font-weight: bold;
+    color: #007bff;
+}
+
+.downSection {
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    grid-area: down;
+    padding: 0 40px 40px;
+}
+
+.guaranteeSection {
+    display: flex;
+    gap: 30px;
+    align-items: flex-start;
+    max-width: 400px;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.guaranteeBadge {
+    width: 130px;
+    height: 130px;
+    background-image: url('../../assets/img/seloGarantia.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    flex-shrink: 0;
+}
+
+.guaranteeInfo {
+    flex: 1;
+}
+
+.guaranteeQuestion {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    font-size: 13px;
+    cursor: pointer;
+    color: #3D3C42;
+    gap: 10px;
+}
+
+.arrow {
+    font-size: 10px;
+    color: #3D3C42;
+}
+
+@media (max-width: 1200px) {
+    .checkoutContainer {
+        padding: 30px 20px;
+    }
+    
+    .orderSummary {
+        flex: 0 0 350px;
+    }
+}
+
+@media (max-width: 1024px) {
+    .checkoutContainer {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .checkoutForm, .orderSummary {
+        width: 100%;
+        max-width: 600px;
+    }
+    
+    .orderSummary {
+        margin-top: 20px;
+        height: auto;
+        max-height: 800px;
+    }
+    
+    .guaranteeSection {
+        margin-top: 0;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    .downSection {
+        padding: 0;
+        margin-top: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    .checkoutForm {
+        padding: 30px 20px;
+        min-height: auto;
+    }
+    
+    .formRow {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .guaranteeSection {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .guaranteeBadge {
+        margin-bottom: 10px;
+    }
+    
+    .paymentMethodSelector {
+        flex-direction: column;
+        align-items: center;
+    }
+    
+    .paymentMethod {
+        width: 100%;
+        max-width: 250px;
+    }
+    
+    .formFooter {
+        justify-content: center;
+    }
+    
+    .btnPrimary {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .mainHeader {
+        padding: 0 10px;
+    }
+    
+    #logo {
+        width: 200px;
+        transform: scale(1.2);
+    }
+    
+    .checkoutContainer {
+        padding: 20px 10px;
+    }
+    
+    .checkoutForm, .orderSummary {
+        padding: 20px 15px;
+    }
+    
+    .productDetails {
+        flex-direction: column;
+    }
+    
+    .productQuantity {
+        margin-top: 10px;
+    }
+    
+    .checkoutSteps::before {
+        width: 70%;
+    }
+    
+    .stepNumber {
+        outline: 10px solid #F7FAFC;
+    }
+    
+    .formSection h2 {
+        font-size: 16px;
+        text-align: center;
+    }
+    
+    .couponInput {
+        flex-direction: column;
+    }
+    
+    .btnApply {
+        padding: 10px;
+    }
+    
+    .orderTotal {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    .totalPrice {
+        font-size: 20px;
+    }
+    
+    .guaranteeSection {
+        padding: 15px;
+    }
+    
+    .guaranteeBadge {
+        width: 100px;
+        height: 100px;
+    }
+}

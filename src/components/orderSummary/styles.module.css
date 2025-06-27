@@ -1,0 +1,139 @@
+.orderSummary {
+    width: 35%;
+    background-color: #1a1a1a;
+    padding: 30px;
+    border-radius: 8px;
+    color: #fff;
+    align-self: flex-start;
+}
+
+.orderSummary h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    font-size: 1.5rem;
+    color: #fff;
+}
+
+.productInfo {
+    display: flex;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+}
+
+.productImage {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-right: 20px;
+}
+
+.productImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.productDetails {
+    flex-grow: 1;
+    display: flex;
+    justify-content: space-between;
+}
+
+.detailsLeft h3 {
+    margin: 0 0 10px 0;
+    font-size: 1rem;
+    color: #fff;
+}
+
+.productPrice {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #00aaff;
+}
+
+.productQuantity {
+    display: flex;
+    align-items: center;
+}
+
+.qtyBtn {
+    width: 30px;
+    height: 30px;
+    background-color: #333;
+    border: none;
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.qtyValue {
+    margin: 0 10px;
+    font-size: 1.1rem;
+}
+
+.couponSection {
+    margin-bottom: 20px;
+}
+
+.couponSection label {
+    display: block;
+    margin-bottom: 10px;
+    color: #ccc;
+}
+
+.couponInput {
+    display: flex;
+}
+
+.couponInput input {
+    flex-grow: 1;
+    padding: 10px;
+    border: 1px solid #333;
+    background-color: #222;
+    color: #fff;
+    border-radius: 4px 0 0 4px;
+}
+
+.btnApply {
+    padding: 10px 15px;
+    background-color: #00aaff;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    border-radius: 0 4px 4px 0;
+}
+
+.orderDetails {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 20px;
+}
+
+.orderRow {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+}
+
+.deliveryInfo {
+    text-align: right;
+    font-size: 0.9rem;
+    color: #ccc;
+}
+
+.orderTotal {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 1.2rem;
+}
+
+.totalPrice {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #00aaff;
+} 

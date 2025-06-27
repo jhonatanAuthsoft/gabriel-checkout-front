@@ -1,0 +1,366 @@
+@font-face {
+    font-family: 'Zen Kaku Gothic Antique Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Zen Kaku Gothic Antique Regular'), url('../assets/font/zenKaku/ZenKakuGothicAntique-Regular.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Zen Kaku Gothic Antique Light';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Zen Kaku Gothic Antique Light'), url('../assets/font/zenKaku/ZenKakuGothicAntique-Light.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Zen Kaku Gothic Antique Medium';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Zen Kaku Gothic Antique Medium'), url('../assets/font/zenKaku/ZenKakuGothicAntique-Medium.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Zen Kaku Gothic Antique Bold';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Zen Kaku Gothic Antique Bold'), url('../assets/font/zenKaku/ZenKakuGothicAntique-Bold.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Zen Kaku Gothic Antique Black';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Zen Kaku Gothic Antique Black'), url('../assets/font/zenKaku/ZenKakuGothicAntique-Black.woff') format('woff');
+}
+
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    font-family: 'Zen Kaku Gothic Antique Regular', sans-serif;
+    background-color: #F8F9FA;
+}
+
+.container {
+    width: 100vw;
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 50% 50%;
+}
+
+#logoSide {
+    background: #121212;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#logo {
+    transform: scale(0.7);
+    height: auto;
+}
+
+#checkoutSide {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.loginContainer {
+    width: 50%;
+}
+
+.loginTitle {
+    font-size: 24px;
+    font-weight: 700;
+    color: #424242;
+    margin-bottom: 30px;
+}
+
+.logoContainerPhone {
+    display: none;
+}
+
+.inputGroup {
+    margin-bottom: 20px;
+}
+
+.input-container {
+    position: relative;
+    background-color: #f5f5f5;
+    border-radius: 8px;
+    padding: 35px 12px 20px;
+}
+
+.input-label {
+    position: absolute;
+    top: 8px;
+    left: 12px;
+    font-size: 11px;
+    color: #868e96;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.inputGroup input {
+    width: 100%;
+    padding-left: 10px;
+    border: none;
+    background-color: transparent;
+    font-size: 16px;
+    color: #333;
+}
+
+.inputGroup input::placeholder {
+    color: #adb5bd;
+}
+
+.inputGroup input:active, .inputGroup input:focus {
+  outline: 0 !important;
+  border: none !important;
+  -moz-outline-style: none !important;
+}
+
+.passwordWrapper {
+    position: relative;
+}
+
+.passwordWrapper input {
+    width: calc(100% - 30px);
+    padding-right: 30px;
+}
+
+.passwordWrapper i {
+    position: absolute;
+    top: 50%;
+    right: 5px;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #868e96;
+}
+
+button[type="submit"] {
+    width: 100%;
+    padding: 25px;
+    border: none;
+    border-radius: 8px;
+    background-color: #007BFF;
+    color: white;
+    font-size: 14px;
+    font-weight: 400;
+    cursor: pointer;
+    margin-top: 15px;
+    margin-bottom: 20px;
+    transition: background-color 0.3s;
+}
+
+button[type="submit"]:hover {
+    background-color: #0056b3;
+}
+
+.forgotPass {
+    display: block;
+    text-align: center;
+    font-size: 13px;
+    color: black;
+    text-decoration: none;
+    font-weight: 700;
+    text-decoration: underline #e3e3e3;
+}
+
+.forgotPass:hover {
+    color: #0056b3;
+    text-decoration: underline #0056b3;
+}
+
+@media screen and (max-width: 1200px) {
+    .loginContainer {
+        width: 70%;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .container {
+        grid-template-columns: 40% 60%;
+    }
+    
+    .loginContainer {
+        width: 80%;
+    }
+
+    #logo {
+        transform: scale(0.4);
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .container {
+        grid-template-columns: 1fr;
+    }
+    
+    #logoSide {
+        display: none;
+    }
+    
+    .loginContainer {
+        width: 70%;
+    }
+    
+    body, html {
+        background-color: #fff;
+    }
+
+    #checkoutSide {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: start;
+        gap: 35px;
+    }
+
+    .logoContainerPhone {
+        display: block;
+        background: #121212;
+        width: 100%;
+        height: 20vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .logoPhone {
+        width: 100%;
+        transform: scale(.6);
+        height: auto;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .loginContainer {
+        width: 85%;
+        padding: 20px;
+    }
+    
+    .loginTitle {
+        font-size: 22px;
+        text-align: center;
+    }
+    
+    .input-container {
+        padding: 30px 12px 15px;
+    }
+    
+    button[type="submit"] {
+        padding: 20px;
+    }
+
+    .logoPhone {
+        width: 100%;
+        transform: scale(.7);
+        height: auto;
+    }
+}
+
+@media screen and (max-width: 375px) {
+    .loginContainer {
+        width: 90%;
+        padding: 15px;
+    }
+    
+    .loginTitle {
+        font-size: 20px;
+    }
+    
+    .input-container {
+        padding: 25px 10px 12px;
+    }
+    
+    .inputGroup input {
+        font-size: 14px;
+    }
+    
+    button[type="submit"] {
+        padding: 15px;
+    }
+}
+
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    .container {
+        height: auto;
+        min-height: 100vh;
+    }
+    
+    .loginContainer {
+        padding: 20px 0;
+    }
+    
+    .input-container {
+        padding: 25px 12px 12px;
+    }
+    
+    button[type="submit"] {
+        padding: 15px;
+        margin: 10px 0;
+    }
+    
+    .inputGroup {
+        margin-bottom: 15px;
+    }
+}
+
+@media screen and (max-width: 320px) {
+    .loginContainer {
+        width: 95%;
+        padding: 10px;
+    }
+    
+    .loginTitle {
+        font-size: 18px;
+        margin-bottom: 20px;
+    }
+    
+    .input-container {
+        padding: 22px 8px 10px;
+    }
+    
+    .inputGroup {
+        margin-bottom: 15px;
+    }
+    
+    button[type="submit"] {
+        padding: 12px;
+    }
+    
+    .forgotPass {
+        font-size: 12px;
+    }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    .input-container {
+        padding: 35px 12px 20px;
+    }
+    
+    .inputGroup input {
+        font-size: 16px;
+    }
+    
+    button[type="submit"] {
+        padding: 20px;
+        -webkit-tap-highlight-color: transparent;
+    }
+}
+
+@media screen and (min-height: 800px) and (max-width: 576px) {
+    .container {
+        align-items: center;
+    }
+    
+    .loginContainer {
+        margin-top: -50px;
+    }
+} 

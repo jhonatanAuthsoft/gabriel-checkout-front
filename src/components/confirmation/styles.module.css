@@ -1,0 +1,5 @@
+@import "../registrationForm/styles.module.css";
+
+.formStep h2 {
+    color: #00aaff;
+} 
