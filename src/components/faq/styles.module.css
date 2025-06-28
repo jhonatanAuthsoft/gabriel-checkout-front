@@ -1,49 +1,48 @@
 .downSection {
-    width: 60%;
-    margin-top: 20px;
+    width: 100%;
+    display: flex;
+    justify-content: end;
+    align-items: center;
+    grid-area: down;
+    padding: 0 40px 40px;
 }
 
 .guaranteeSection {
-    background-color: #1a1a1a;
-    padding: 20px;
-    border-radius: 8px;
     display: flex;
-    align-items: center;
+    gap: 30px;
+    align-items: flex-start;
+    max-width: 400px;
+    background-color: #fff;
+    border-radius: 8px;
+    padding: 20px;
 }
 
 .guaranteeBadge {
-    width: 100px;
-    height: 100px;
-    background-color: #333;
-    border-radius: 50%;
-    margin-right: 20px;
-    background-image: url('../../../assets/img/seloGarantia.png');
+    width: 130px;
+    height: 130px;
+    background-image: url('../../assets/img/seloGarantia.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+    flex-shrink: 0;
 }
 
 .guaranteeInfo {
-    flex-grow: 1;
+    flex: 1;
 }
 
 .guaranteeQuestion {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 15px 0;
-    border-bottom: 1px solid #333;
+    padding: 8px 0;
+    font-size: 13px;
     cursor: pointer;
-}
-
-.guaranteeQuestion:last-child {
-    border-bottom: none;
-}
-
-.guaranteeQuestion span {
-    color: #fff;
+    color: #3D3C42;
+    gap: 10px;
 }
 
 .arrow {
-    color: #00aaff;
-} 
+    font-size: 10px;
+    color: #3D3C42;
+}

@@ -1,5 +1,6 @@
 .formStep {
     display: none;
+    flex: 1;
 }
 
 .formStep.active {
@@ -7,15 +8,13 @@
 }
 
 .formSection {
-    margin-bottom: 20px;
+    flex: 1;
 }
 
 .formSection h2 {
-    font-size: 1.5rem;
-    color: #fff;
+    font-size: 18px;
     margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #333;
+    font-family: 'Poppins Bold', sans-serif;
 }
 
 .formGroup {
@@ -24,52 +23,69 @@
 
 .formGroup label {
     display: block;
-    margin-bottom: 8px;
-    color: #ccc;
-    font-weight: 500;
+    margin-bottom: 5px;
+    font-size: 14px;
+    color: #666;
 }
 
 .inputWrapper {
     position: relative;
 }
 
-.inputWrapper input,
-.inputWrapper select {
+.inputWrapper input, select {
     width: 100%;
     padding: 12px 15px;
-    background-color: #222;
-    border: 1px solid #444;
+    border: 1px solid #ddd;
     border-radius: 4px;
-    color: #fff;
-    font-size: 1rem;
-}
-
-.inputWrapper input:focus {
-    outline: none;
-    border-color: #00aaff;
+    font-size: 14px;
 }
 
 .validIcon {
     position: absolute;
-    right: 15px;
+    right: 10px;
     top: 50%;
     transform: translateY(-50%);
     width: 20px;
     height: 20px;
-    background-color: green;
+    background-color: #4CAF50;
     border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     display: none;
 }
 
 .inputWrapper.valid .validIcon {
-    display: block;
+    display: flex;
+}
+
+.validIcon::before {
+    content: '';
+    width: 6px;
+    height: 10px;
+    border-right: 2px solid white;
+    border-bottom: 2px solid white;
+    transform: rotate(45deg) translate(-1px, -1px);
 }
 
 .formRow {
     display: flex;
-    gap: 20px;
+    gap: 15px;
 }
 
 .formRow .formGroup {
     flex: 1;
-} 
+}
+
+.formStep {
+    display: none;
+    flex: 1;
+}
+
+.formStep.active {
+    display: block;
+}
+
+.formSection {
+    flex: 1;
+}
