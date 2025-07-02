@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
 import { FaShoppingBag, FaCog, FaPlus, FaMinus, FaCheck, FaCopy, FaCheckCircle, FaPencilAlt, FaTrashAlt, FaSearch } from 'react-icons/fa';
 import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowUpFromBracket } from 'react-icons/fa6';
@@ -6,15 +7,67 @@ import logoImg from '../../../assets/img/df.png';
 import seloGarantiaImg from '../../../assets/img/seloGarantia.png';
 
 const NovoProduto: React.FC = () => {
+    const { id } = useParams<{ id: string }>();
+    const navigate = useNavigate();
+
+    const [produtoData, setProdutoData] = useState({
+        dadosProduto: {
+            dadosGerais: {
+                codigo: '',
+                chave: '',
+                nome: '',
+                codigoSku: '',
+                descricao: ''
+            },
+            formatoCategoria: {
+                formato: '',
+                categoria: ''
+            },
+            cobranca: {
+                tipoCobranca: 'UNICA',
+                peridiocidade: 'MENSAL',
+                preco: 0,
+                gratis: false,
+                tipoPrimeiraParcela: 'IGUAL',
+                valorPrimeiraParcela: 0,
+                carencia: 0
+            },
+            disponibilidade: {
+                disponivel: true,
+                quantidadeMaxima: 0
+            },
+            suporteGarantia: {
+                email: '',
+                telefoneSuporte: '',
+                mostrarTelefoneSuporte: false,
+                whatsappSuporte: '',
+                mostrarWhatsappSuporte: false
+            },
+            urlPersonalizada: ''
+        },
+        checkout: {
+            exibicoes: {
+                exibirImagensProduto: true,
+                exibirSelos: true,
+                exibirFaq: true
+            },
+            perguntas: [] as { id?: number; pergunta: string; resposta: string }[]
+        },
+        planos: [] as any[],
+        cupom: [] as any[]
+    });
+    
+    const [imagens, setImagens] = useState<File[]>([]);
+    const [mapeamentoImagens, setMapeamentoImagens] = useState<{ nomeArquivo: string, tipo: string }[]>([]);
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [activeSubMenus, setActiveSubMenus] = useState<string[]>(['Produtos']);
     const [activeSection, setActiveSection] = useState('dados');
-    const [description, setDescription] = useState('');
     const [expandedRows, setExpandedRows] = useState<{ [key: string]: boolean }>({});
     const [showPlanoForm, setShowPlanoForm] = useState(false);
     const [showCupomForm, setShowCupomForm] = useState(false);
     const [copiedUrlStatuses, setCopiedUrlStatuses] = useState<{ [key: string]: boolean }>({});
-
+    const [tipoCobranca, setTipoCobranca] = useState('unica');
+    const [primeiraParcela, setPrimeiraParcela] = useState('igual');
 
     const overlayRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLElement>(null);
@@ -43,7 +96,6 @@ const NovoProduto: React.FC = () => {
         }
     }, [isSidebarActive]);
 
-
     const toggleSidebar = () => {
         setSidebarActive(prev => !prev);
     };
@@ -59,7 +111,7 @@ const NovoProduto: React.FC = () => {
     };
 
     const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        setDescription(e.target.value);
+        handleInputChange(e.target.name, e.target.value);
     };
 
     const handleFileButtonClick = (ref: React.RefObject<HTMLInputElement | null>) => {
@@ -68,10 +120,81 @@ const NovoProduto: React.FC = () => {
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, inputName: string) => {
         if (event.target.files && event.target.files.length > 0) {
-            console.log(`${inputName} - Arquivo selecionado: `, event.target.files[0].name);
+            const files = Array.from(event.target.files);
+            const newMapeamento = files.map(file => ({
+                nomeArquivo: file.name,
+                tipo: inputName.toUpperCase()
+            }));
+
+            setImagens(prev => [...prev, ...files]);
+            setMapeamentoImagens(prev => [...prev, ...newMapeamento]);
         }
     };
-    
+
+    const handleInputChange = (name: string, value: any) => {
+        const keys = name.split('.');
+        setProdutoData(prev => {
+            const newState = { ...prev };
+            let current: any = newState;
+            for (let i = 0; i < keys.length - 1; i++) {
+                current = current[keys[i]];
+            }
+            current[keys[keys.length - 1]] = value;
+            return newState;
+        });
+    };
+
+    const handleSave = async () => {
+        const formData = new FormData();
+        const dadosPayload = {
+            dados: produtoData,
+            mapeamentoImagens: mapeamentoImagens,
+        };
+
+        formData.append('dados', JSON.stringify(dadosPayload));
+
+        imagens.forEach(file => {
+            formData.append('imagens', file);
+        });
+
+        const token = import.meta.env.VITE_API_TOKEN || localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+
+        if (!apiUrl) {
+            console.error('URL da API não configurada. Verifique o arquivo .env e reinicie o servidor.');
+            return;
+        }
+
+        if (!token) {
+            console.error('Token de autenticação não encontrado. Faça login ou configure VITE_API_TOKEN no .env.');
+            return;
+        }
+
+        const url = id ? `${apiUrl}produto/editar-produto/${id}` : `${apiUrl}produto/cadastrar`;
+        const method = id ? 'PATCH' : 'POST';
+
+        try {
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                console.log('Produto salvo:', result);
+                navigate('/produtos');
+            } else {
+                const errorData = await response.json();
+                console.error('Falha ao salvar produto', errorData);
+            }
+        } catch (error) {
+            console.error('Erro:', error);
+        }
+    };
+
     const alignExpandedRows = (expandedContent: HTMLElement) => {
         const infoLabels = expandedContent.querySelector('.infoLabels');
         const infoValues = expandedContent.querySelector('.infoValues');
@@ -131,7 +254,6 @@ const NovoProduto: React.FC = () => {
             window.removeEventListener('resize', handleResize);
         };
     }, [expandedRows]);
-
 
     const handleCopyUrl = async (inputId: string) => {
         const input = document.getElementById(inputId) as HTMLInputElement;
@@ -254,21 +376,21 @@ const NovoProduto: React.FC = () => {
                                         <div className={styles.dataCol1}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="codigo">Código</label>
-                                                <input type="text" name="codigo" className={styles.input} />
+                                                <input type="text" name="dadosProduto.dadosGerais.codigo" value={produtoData.dadosProduto.dadosGerais.codigo} onChange={(e) => handleInputChange(e.target.name, e.target.value)} className={styles.input} />
                                             </div>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="chave">Chave</label>
-                                                <input type="text" name="chave" className={styles.input} />
+                                                <input type="text" name="dadosProduto.dadosGerais.chave" value={produtoData.dadosProduto.dadosGerais.chave} onChange={(e) => handleInputChange(e.target.name, e.target.value)} className={styles.input} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol2}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="nome">Nome</label>
-                                                <input type="text" name="nome" className={styles.input} />
+                                                <input type="text" name="dadosProduto.dadosGerais.nome" value={produtoData.dadosProduto.dadosGerais.nome} onChange={(e) => handleInputChange(e.target.name, e.target.value)} className={styles.input} />
                                             </div>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="sku">Código SKU</label>
-                                                <input type="text" name="sku" className={styles.input} />
+                                                <input type="text" name="dadosProduto.dadosGerais.codigoSku" value={produtoData.dadosProduto.dadosGerais.codigoSku} onChange={(e) => handleInputChange(e.target.name, e.target.value)} className={styles.input} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol}>
@@ -276,14 +398,14 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="descricao">Descrição</label>
                                                 <textarea
                                                     id="descArea"
-                                                    name="descricao"
+                                                    name="dadosProduto.dadosGerais.descricao"
                                                     className={styles.inputArea}
                                                     maxLength={1000}
-                                                    value={description}
+                                                    value={produtoData.dadosProduto.dadosGerais.descricao}
                                                     onChange={handleDescriptionChange}
                                                 />
                                                 <p className={styles.textCount}>
-                                                    <span>{description.length}</span>/1000
+                                                    <span>{produtoData.dadosProduto.dadosGerais.descricao.length}</span>/1000
                                                 </p>
                                             </div>
                                         </div>
@@ -302,10 +424,10 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="formato">
                                                     Formato
                                                 </label>
-                                                <select className={styles.filterSelect}>
+                                                <select name="dadosProduto.formatoCategoria.formato" value={produtoData.dadosProduto.formatoCategoria.formato} onChange={(e) => handleInputChange(e.target.name, e.target.value)} className={styles.filterSelect}>
                                                     <option value="" />
-                                                    <option value="fisico">Físico</option>
-                                                    <option value="digital">Digital</option>
+                                                    <option value="FISICO">Físico</option>
+                                                    <option value="DIGITAL">Digital</option>
                                                 </select>
                                                 <FaChevronDown className={styles.selectIcon} />
                                             </div>
@@ -313,19 +435,19 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="categoria">
                                                     Categoria
                                                 </label>
-                                                <select className={styles.filterSelect}>
+                                                <select name="dadosProduto.formatoCategoria.categoria" value={produtoData.dadosProduto.formatoCategoria.categoria} onChange={(e) => handleInputChange(e.target.name, e.target.value)} className={styles.filterSelect}>
                                                     <option value="" />
-                                                    <option value="eletronicos">Eletrônicos</option>
-                                                    <option value="casa">Casa</option>
-                                                    <option value="moda">Moda</option>
-                                                    <option value="saude">Saúde</option>
-                                                    <option value="alimentos">Alimentos</option>
-                                                    <option value="esporte">Esporte</option>
-                                                    <option value="lazer">Lazer</option>
-                                                    <option value="arte">Arte</option>
-                                                    <option value="cursos">Cursos</option>
-                                                    <option value="colecionaveis">Colecionáveis</option>
-                                                    <option value="servicos">Serviços</option>
+                                                    <option value="ELETRONICOS">Eletrônicos</option>
+                                                    <option value="CASA">Casa</option>
+                                                    <option value="MODA">Moda</option>
+                                                    <option value="SAUDE">Saúde</option>
+                                                    <option value="ALIMENTOS">Alimentos</option>
+                                                    <option value="ESPORTE">Esporte</option>
+                                                    <option value="LAZER">Lazer</option>
+                                                    <option value="ARTE">Arte</option>
+                                                    <option value="CURSOS">Cursos</option>
+                                                    <option value="COLECIONAVEIS">Colecionáveis</option>
+                                                    <option value="SERVICOS">Serviços</option>
                                                 </select>
                                                 <FaChevronDown className={styles.selectIcon} />
                                             </div>
@@ -340,7 +462,132 @@ const NovoProduto: React.FC = () => {
                                     <FaCheckCircle className={styles.checkIcon} />
                                 </div>
                                 <div className={styles.contentCardBody}>
-                                    <div className={styles.dataSection} style={{ height: 300 }}></div>
+                                    <div className={styles.dataSection}>
+                                        <div className={`${styles.dataCol3}`}>
+                                            <div className={styles.radioSection}>
+                                                <div className={styles.radioTop}>
+                                                    <label className={styles.label} htmlFor="tipoCobrança">
+                                                        Tipo de Cobrança
+                                                    </label>
+                                                </div>
+                                                <div className={styles.radioBody}>
+                                                    <label className={styles.radioButton}>
+                                                        <input
+                                                            type="radio"
+                                                            name="dadosProduto.cobranca.tipoCobranca"
+                                                            value="UNICA"
+                                                            checked={produtoData.dadosProduto.cobranca.tipoCobranca === 'UNICA'}
+                                                            onChange={(e) => {
+                                                                handleInputChange(e.target.name, e.target.value)
+                                                                setTipoCobranca('unica')
+                                                            }}
+                                                        />
+                                                        <span className={styles.radio} />
+                                                        Única
+                                                    </label>
+                                                    <label className={styles.radioButton}>
+                                                        <input
+                                                            type="radio"
+                                                            name="dadosProduto.cobranca.tipoCobranca"
+                                                            value="RECORRENTE"
+                                                            checked={produtoData.dadosProduto.cobranca.tipoCobranca === 'RECORRENTE'}
+                                                            onChange={(e) => {
+                                                                handleInputChange(e.target.name, e.target.value)
+                                                                setTipoCobranca('recorrente')
+                                                            }}
+                                                        />
+                                                        <span className={styles.radio} />
+                                                        Recorrente
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            {tipoCobranca === 'recorrente' && (
+                                                <div className={styles.inputGroup}>
+                                                    <div className={styles.selectWrapper}>
+                                                        <label className={styles.label} htmlFor="periodicidade">
+                                                            Periodicidade
+                                                        </label>
+                                                        <select className={styles.filterSelect} name="dadosProduto.cobranca.peridiocidade" value={produtoData.dadosProduto.cobranca.peridiocidade} onChange={(e) => handleInputChange(e.target.name, e.target.value)}>
+                                                            <option value="MENSAL">Mensal</option>
+                                                            <option value="BIMESTRAL">Bimestral</option>
+                                                            <option value="TRIMESTRAL">Trimestral</option>
+                                                            <option value="SEMESTRAL">Semestral</option>
+                                                            <option value="ANUAL">Anual</option>
+                                                        </select>
+                                                        <FaChevronDown className={styles.selectIcon} />
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className={`${styles.dataCol4}`}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="preco">
+                                                    Preço
+                                                </label>
+                                                <input type="number" name="dadosProduto.cobranca.preco" placeholder="0,00" className={styles.input} value={produtoData.dadosProduto.cobranca.preco} onChange={(e) => handleInputChange(e.target.name, parseFloat(e.target.value))} />
+                                            </div>
+                                            <div className={styles.sliderGroup}>
+                                                <div className={styles.switchContainer}>
+                                                    <input
+                                                        type="checkbox"
+                                                        className={styles.slideCheckbox}
+                                                        id="produtoGratis"
+                                                        name="dadosProduto.cobranca.gratis"
+                                                        checked={produtoData.dadosProduto.cobranca.gratis}
+                                                        onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
+                                                    />
+                                                    <label className={styles.slideSwitch} htmlFor="produtoGratis">
+                                                        <span className={styles.sliderSwitch} />
+                                                    </label>
+                                                </div>
+                                                <p className={styles.sliderText}>Grátis</p>
+                                            </div>
+                                        </div>
+                                        {tipoCobranca === 'recorrente' && (
+                                            <>
+                                                <div className={`${styles.dataCol3}`}>
+                                                    <div className={styles.inputGroup}>
+                                                        <div className={styles.selectWrapper}>
+                                                            <label className={styles.label} htmlFor="primeiraParcela">
+                                                                Primeira Parcela
+                                                            </label>
+                                                            <select 
+                                                                className={styles.filterSelect} 
+                                                                name="dadosProduto.cobranca.tipoPrimeiraParcela"
+                                                                value={produtoData.dadosProduto.cobranca.tipoPrimeiraParcela}
+                                                                onChange={(e) => {
+                                                                    handleInputChange(e.target.name, e.target.value);
+                                                                    setPrimeiraParcela(e.target.value === 'IGUAL' ? 'igual' : 'diferente');
+                                                                }}
+                                                            >
+                                                                <option value="IGUAL">Igual as demais</option>
+                                                                <option value="DIFERENTE">Valor diferente</option>
+                                                            </select>
+                                                            <FaChevronDown className={styles.selectIcon} />
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                                {primeiraParcela === 'diferente' && (
+                                                    <div className={`${styles.dataCol4}`}>
+                                                        <div className={styles.inputGroup}>
+                                                            <label className={styles.label} htmlFor="precoPrimeiraParcela">
+                                                                Preço Primeira Parcela
+                                                            </label>
+                                                            <input type="number" name="dadosProduto.cobranca.valorPrimeiraParcela" placeholder="0,00" className={styles.input} value={produtoData.dadosProduto.cobranca.valorPrimeiraParcela} onChange={(e) => handleInputChange(e.target.name, parseFloat(e.target.value))} />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className={`${styles.dataCol4}`}>
+                                                     <div className={styles.inputGroup}>
+                                                        <label className={styles.label} htmlFor="carencia">
+                                                            Carência
+                                                        </label>
+                                                        <input type="number" name="dadosProduto.cobranca.carencia" placeholder="dias" className={styles.input} value={produtoData.dadosProduto.cobranca.carencia} onChange={(e) => handleInputChange(e.target.name, parseInt(e.target.value))} />
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </div>
                                     <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
                                 </div>
                             </div>
@@ -361,8 +608,9 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="disponibilidade"
-                                                            defaultValue="sim"
+                                                            name="dadosProduto.disponibilidade.disponivel"
+                                                            checked={produtoData.dadosProduto.disponibilidade.disponivel === true}
+                                                            onChange={() => handleInputChange('dadosProduto.disponibilidade.disponivel', true)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Sim
@@ -370,8 +618,9 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="disponibilidade"
-                                                            defaultValue="nao"
+                                                            name="dadosProduto.disponibilidade.disponivel"
+                                                            checked={produtoData.dadosProduto.disponibilidade.disponivel === false}
+                                                            onChange={() => handleInputChange('dadosProduto.disponibilidade.disponivel', false)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Não
@@ -382,7 +631,7 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="maxima">
                                                     Quantidade Máxima
                                                 </label>
-                                                <input type="text" name="maxima" className={styles.input} />
+                                                <input type="number" name="dadosProduto.disponibilidade.quantidadeMaxima" className={styles.input} value={produtoData.dadosProduto.disponibilidade.quantidadeMaxima} onChange={(e) => handleInputChange(e.target.name, parseInt(e.target.value))} />
                                             </div>
                                         </div>
                                     </div>
@@ -431,7 +680,7 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="email">
                                                     E-mail Suporte
                                                 </label>
-                                                <input type="text" name="email" className={styles.input} />
+                                                <input type="text" name="dadosProduto.suporteGarantia.email" className={styles.input} value={produtoData.dadosProduto.suporteGarantia.email} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol4}>
@@ -439,13 +688,16 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="telefone">
                                                     Telefone de Suporte
                                                 </label>
-                                                <input type="text" name="telefone" className={styles.input} />
+                                                <input type="text" name="dadosProduto.suporteGarantia.telefoneSuporte" className={styles.input} value={produtoData.dadosProduto.suporteGarantia.telefoneSuporte} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                             <div className={styles.checkboxWrapper}>
                                                 <input
                                                     type="checkbox"
                                                     id="checkboxTelefone"
                                                     className={styles.checkboxInput}
+                                                    name="dadosProduto.suporteGarantia.mostrarTelefoneSuporte"
+                                                    checked={produtoData.dadosProduto.suporteGarantia.mostrarTelefoneSuporte}
+                                                    onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                 />
                                                 <label htmlFor="checkboxTelefone" className={styles.checkbox}>
                                                     <span>
@@ -460,17 +712,20 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="whatsapp">
                                                     Whatsapp de Suporte
                                                 </label>
-                                                <input type="text" name="whatsapp" className={styles.input} />
+                                                <input type="text" name="dadosProduto.suporteGarantia.whatsappSuporte" className={styles.input} value={produtoData.dadosProduto.suporteGarantia.whatsappSuporte} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                             <div className={styles.checkboxWrapper}>
                                                 <input
                                                     type="checkbox"
                                                     id="checkboxWhatsapp"
                                                     className={styles.checkboxInput}
+                                                    name="dadosProduto.suporteGarantia.mostrarWhatsappSuporte"
+                                                    checked={produtoData.dadosProduto.suporteGarantia.mostrarWhatsappSuporte}
+                                                    onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                 />
                                                 <label htmlFor="checkboxWhatsapp" className={styles.checkbox}>
                                                     <span>
-                                                    <FaCheck />
+                                                        <FaCheck />
                                                     </span>
                                                     <span>Mostrar no Checkout</span>
                                                 </label>
@@ -615,7 +870,7 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="paginaVenda"
+                                                            name="dadosProduto.urlPersonalizada"
                                                             defaultValue="proprio"
                                                         />
                                                         <span className={styles.radio} />
@@ -624,7 +879,7 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="paginaVenda"
+                                                            name="dadosProduto.urlPersonalizada"
                                                             defaultValue="instagram"
                                                         />
                                                         <span className={styles.radio} />
@@ -638,7 +893,7 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="instagram">
                                                     URL da página do perfil do Instagram
                                                 </label>
-                                                <input type="text" name="email" className={styles.input} />
+                                                <input type="text" name="dadosProduto.urlPersonalizada" className={styles.input} value={produtoData.dadosProduto.urlPersonalizada} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                         </div>
                                         <label className={`${styles.label} ${styles.interSection}`}>
@@ -649,7 +904,7 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="email">
                                                     URL da página de obrigado
                                                 </label>
-                                                <input type="text" name="email" className={styles.input} />
+                                                <input type="text" name="dadosProduto.urlPersonalizada" className={styles.input} value={produtoData.dadosProduto.urlPersonalizada} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                         </div>
                                     </div>
@@ -668,7 +923,7 @@ const NovoProduto: React.FC = () => {
                                         <input
                                             type="file"
                                             ref={fotosFileInputRef}
-                                            onChange={(e) => handleFileChange(e, 'fotos')}
+                                            onChange={(e) => handleFileChange(e, 'produto')}
                                             style={{ display: "none" }}
                                             multiple
                                         />
@@ -679,8 +934,8 @@ const NovoProduto: React.FC = () => {
                             </div>
                             <div className={styles.paginationContainer}>
                                 <div className={styles.paginationControls}>
-                                    <button id="btnCancel" className={styles.paginationBtn}>Cancelar</button>
-                                    <button id="btnSave" className={styles.paginationBtn}>Salvar</button>
+                                    <button className={`${styles.paginationBtn} ${styles.btnCancel}`}>Cancelar</button>
+                                    <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave}>Salvar</button>
                                 </div>
                             </div>
                         </div>
@@ -721,6 +976,9 @@ const NovoProduto: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.slideCheckbox}
                                                         id="imagemProduto"
+                                                        name="checkout.exibicoes.exibirImagensProduto"
+                                                        checked={produtoData.checkout.exibicoes.exibirImagensProduto}
+                                                        onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                     />
                                                     <label className={styles.slideSwitch} htmlFor="imagemProduto">
                                                         <span className={styles.sliderSwitch} />
@@ -736,6 +994,9 @@ const NovoProduto: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.slideCheckbox}
                                                         id="faq"
+                                                        name="checkout.exibicoes.exibirFaq"
+                                                        checked={produtoData.checkout.exibicoes.exibirFaq}
+                                                        onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                     />
                                                     <label className={styles.slideSwitch} htmlFor="faq">
                                                         <span className={styles.sliderSwitch} />
@@ -751,6 +1012,9 @@ const NovoProduto: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.slideCheckbox}
                                                         id="seloGarantia"
+                                                        name="checkout.exibicoes.exibirSelos"
+                                                        checked={produtoData.checkout.exibicoes.exibirSelos}
+                                                        onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                     />
                                                     <label className={styles.slideSwitch} htmlFor="seloGarantia">
                                                         <span className={styles.sliderSwitch} />
@@ -765,8 +1029,8 @@ const NovoProduto: React.FC = () => {
                             </div>
                             <div className={styles.paginationContainer}>
                                 <div className={styles.paginationControls}>
-                                    <button id="btnCancel" className={styles.paginationBtn}>Cancelar</button>
-                                    <button id="btnSave" className={styles.paginationBtn}>Salvar</button>
+                                    <button className={`${styles.paginationBtn} ${styles.btnCancel}`}>Cancelar</button>
+                                    <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave}>Salvar</button>
                                 </div>
                             </div>
                         </div>
@@ -907,8 +1171,8 @@ const NovoProduto: React.FC = () => {
                                     </div>
                                     <div className={styles.paginationContainer}>
                                         <div className={styles.paginationControls}>
-                                            <button className={styles.paginationBtn} onClick={() => setShowPlanoForm(false)}>Cancelar</button>
-                                            <button className={styles.paginationBtn} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar</button>
+                                            <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => setShowPlanoForm(false)}>Cancelar</button>
+                                            <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1202,8 +1466,8 @@ const NovoProduto: React.FC = () => {
                                     </div>
                                     <div className={styles.paginationContainer}>
                                         <div className={styles.paginationControls}>
-                                            <button className={styles.paginationBtn} onClick={() => setShowCupomForm(false)}>Cancelar</button>
-                                            <button className={styles.paginationBtn} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar</button>
+                                            <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => setShowCupomForm(false)}>Cancelar</button>
+                                            <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar</button>
                                         </div>
                                     </div>
                                  </div>

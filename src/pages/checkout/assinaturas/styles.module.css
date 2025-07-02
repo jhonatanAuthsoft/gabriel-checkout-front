@@ -1,0 +1,1499 @@
+@font-face {
+    font-family: 'Poppins Regular';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Poppins Regular'), url('/src/assets/font/poppins/Poppins-Regular.woff') format('woff');
+}
+
+@font-face {
+    font-family: 'Poppins Bold';
+    font-style: normal;
+    font-weight: normal;
+    src: local('Poppins Bold'), url('/src/assets/font/poppins/Poppins-Bold.woff') format('woff');
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Poppins Regular', sans-serif;
+}
+
+body, html {
+    height: 100%;
+    font-family: 'Poppins Regular', sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+    overflow-x: hidden;
+    scroll-behavior: smooth;
+}
+
+body.no-scroll {
+    overflow: hidden;
+}
+
+.mainContainer {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: 80px 1fr;
+    grid-template-areas:
+        "header header"
+        "sidebar content";
+    height: 100vh;
+    width: 100vw;
+}
+
+.mainHeader {
+    grid-area: header;
+    background-color: #121212;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 40px 0px 0px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    height: 80px;
+    z-index: 10;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.mobileMenuBtn {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 10px;
+    margin-right: 10px;
+    z-index: 30;
+    position: relative;
+}
+
+#logo {
+    background-image: url('../../assets/img/df.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 300px;
+    height: 100%;
+    transform: scale(1.5);
+}
+
+.headerActions a {
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+}
+
+.sidebar {
+    grid-area: sidebar;
+    background-color: #D9D9D9;
+    padding: 100px 15px;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.overlay.active {
+    opacity: 1;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    padding: 5px 0px;
+    cursor: pointer;
+    position: relative;
+    color: #424242;
+    font-weight: 500;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0 5px 5px 0;
+    margin-bottom: 2px;
+    color: #000;
+    font-weight: 550;
+}
+
+.navItem i:first-child {
+    margin-right: 15px;
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.navItem span {
+    font-size: 15px;
+}
+
+.navItem .expandIcon {
+    position: absolute;
+    right: 20px;
+    transition: transform 0.3s ease-in-out;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.navItem.active {
+    background-color: #007bff;
+    color: white;
+    border-left: 4px solid #0056b3;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.navItem:hover:not(.active) {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 4px solid rgba(0, 123, 255, 0.5);
+}
+
+.expandIcon.rotate {
+    transform: rotate(180deg);
+}
+
+.subMenu {
+    padding: 0px 0;
+    margin-left: 10px;
+    border-radius: 0 0 5px 0;
+    color: #000;
+}
+
+.subMenu a {
+    text-decoration: none;
+    
+}
+
+.subMenuItem {
+    padding: 12px 20px 12px 50px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0 5px 5px 0;
+    margin-bottom: 5px;
+    color: #000;
+    font-weight: 550;
+}
+
+.subMenuItem:hover {
+    border-radius: 10px;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 4px solid rgba(0, 123, 255, 0.5);
+}
+
+.subMenuItem.active {
+    color: #ffffff;
+    background-color: #0372e2;
+    border-radius: 10px;
+}
+
+.mainContent {
+    grid-area: content;
+    overflow-y: auto;
+    background-color: #FFFFFF;
+    padding: 100px 200px;
+}
+
+.contentHeader {
+    margin-bottom: 30px;
+    width: 102%;
+    margin-left: -2%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.pageTitle {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    font-family: 'Poppins Bold', sans-serif;
+    margin: 0 -40px 60px -100px;
+}
+
+.filterActions {
+    display: flex;
+    justify-content: right;
+    align-items: center;
+    gap: 20px;
+}
+
+.filterActionsLeft {
+    display: flex;
+    gap: 10px;
+}
+
+.filterActionsRight {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.orderByText {
+    font-size: 14px;
+    color: #666;
+}
+
+.btnExport, .btnClear {
+    border: 1px solid #0070E1;
+    background-color: #fff;
+    color: #0070E1;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease-in-out;
+}
+
+.btnExport:hover, .btnClear:hover {
+    background-color: #0070E1;
+    color: #fff;
+    border: none;
+}
+
+.tableContainer {
+    background-color: #fff;
+    border-radius: 10px;
+    padding: 0;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+.tableResponsive {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.tableResponsive::-webkit-scrollbar {
+    height: 6px;
+}
+
+.tableResponsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.tableResponsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.tableResponsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+.reportTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reportTable th, .reportTable td {
+    padding: 15px;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.reportTable th {
+    background-color: #fff;
+    color: #96A5B8;
+    font-weight: 500;
+    font-size: 14px;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.reportTable td {
+    color: #292D32;
+    font-size: 14px;
+    border-bottom: 1px solid #f5f5f5;
+    font-weight: 600;
+    vertical-align: middle;
+}
+
+.reportTable tr:last-child td {
+    border-bottom: none;
+}
+
+.reportTable tr:hover {
+    background-color: #f9f9f9;
+}
+
+.sortable {
+    cursor: pointer;
+}
+
+.sortable i {
+    margin-left: 5px;
+    font-size: 12px;
+    color: #ccc;
+}
+
+.statusProduto {
+    padding: 6px 12px;
+    border-radius: 16px;
+    font-weight: 500;
+    font-size: 13px;
+    display: inline-block;
+}
+
+.statusProduto.concluido {
+    color: #79CC5B;
+}
+
+.statusProduto.processando {
+    color: #0070E1;
+}
+
+.actionsBtn {
+    font-size: 25px;
+    cursor: pointer;
+    padding: 5px;
+}
+
+.whatsappBtn {
+    color: #61FD7D;
+    font-size: 35px;
+    cursor: pointer;
+}
+
+.actionsContainer {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.actionsMenu {
+    display: none;
+    position: fixed;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    padding: 8px 0;
+    width: max-content;
+    z-index: 100;
+}
+
+.actionsMenu.show {
+    display: block;
+}
+
+.actionsMenu a {
+    display: block;
+    padding: 10px 20px;
+    color: #333;
+    text-decoration: none;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.actionsMenu a:hover {
+    background-color: #f5f5f5;
+}
+
+.actionsMenu a:last-child {
+    border-bottom: none;
+}
+
+.btnEdit {
+    background: #0070E1;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btnDelete {
+    background: #DD5B3A;
+    color: #fff;
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btnAction {
+    background: none;
+    border: none;
+    color: #007bff;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.btnAction:hover {
+    color: #0056b3;
+}
+
+.text-center {
+    text-align: center;
+    vertical-align: middle;
+}
+
+.statusItens {
+    display: flex;
+    align-items: center;
+}
+
+.paginationContainer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+}
+
+.paginationInfo {
+    font-size: 14px;
+    color: #666;
+}
+
+.paginationControls {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.paginationBtn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    border-radius: 5px;
+    font-size: 14px;
+    color: #333;
+    cursor: pointer;
+}
+
+.paginationBtn.active {
+    background-color: #007bff;
+    color: #fff;
+    border-color: #007bff;
+}
+
+.paginationBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.paginationEllipsis {
+    color: #666;
+}
+
+@media screen and (max-width: 1600px) {
+    .mainContent {
+        padding: 100px 200px;
+    }
+}
+
+@media screen and (max-width: 1400px) {
+    .mainContent {
+        padding: 100px 150px;
+    }
+}
+
+@media screen and (max-width: 1200px) {
+    .mainContent {
+        padding: 80px 100px;
+    }
+    
+    .filterItem {
+        min-width: 150px;
+    }
+
+    .filterInput {
+        font-size: 13px;
+    }
+
+    .filterSelect {
+        font-size: 13px;
+    }
+
+    .dateLabel {
+        font-size: 13px;
+    }
+    
+    .productImage {
+        width: 50px;
+        height: 50px;
+    }
+
+    .subscriptionTable {
+        width: 80%;
+    }
+    .contentCardPayment {
+        margin-left: 0;
+    }
+    .creditCardForm {
+        width: 100%;
+        margin: 0;
+    }
+    .paginationControls {
+        width: 80%;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .mainContent {
+        padding: 80px 50px;
+    }
+    
+    .filterItem {
+        min-width: 120px;
+    }
+    
+    .contentHeader {
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .filterInput {
+        font-size: 10px;
+    }
+
+    .filterSelect {
+        font-size: 10px;
+    }
+
+    .dateLabel {
+        font-size: 10px;
+    }
+    
+    .productImage {
+        width: 45px;
+        height: 45px;
+    }
+    
+    .filterActions {
+        margin-right: 0;
+    }
+
+    .pageTitle {
+        margin: 0 0 40px 0;
+    }
+    .subscriptionTable,
+    .paginationControls {
+        width: 100%;
+    }
+    .contentSection {
+        padding: 20px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .mainContainer {
+        grid-template-columns: 1fr;
+        grid-template-rows: 60px 1fr;
+        grid-template-areas:
+            "header"
+            "content";
+        height: 100%;
+        overflow-y: auto;
+    }
+    
+    .mainHeader {
+        height: 60px;
+        padding: 0 15px;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        z-index: 20;
+    }
+    
+    .mobileMenuBtn {
+        display: block;
+        font-size: 22px;
+        padding: 15px;
+    }
+    
+    .mobileMenuBtn i {
+        pointer-events: none;
+    }
+    
+    #logo {
+        width: 200px;
+        height: 60px;
+    }
+    
+    .sidebar {
+        position: fixed;
+        top: 60px;
+        left: 0;
+        width: 250px;
+        height: calc(100vh - 60px);
+        z-index: 10;
+        transform: translateX(-100%);
+        padding-top: 20px;
+    }
+    
+    .sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .overlay {
+        display: block;
+        top: 60px;
+    }
+    
+    .mainContent {
+        padding: 80px 20px 20px 20px;
+        height: auto;
+        min-height: calc(100vh - 60px);
+    }
+    
+    .filterItem {
+        min-width: 100%;
+        flex: none;
+    }
+    
+    .filterRow {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .filterActions {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+        margin-right: 0;
+    }
+    
+    .filterActionsLeft {
+        width: 100%;
+        justify-content: space-between;
+        gap: 10px;
+    }
+    
+    .filterActionsRight {
+        width: 100%;
+    }
+    
+    .orderByWrapper {
+        width: 100%;
+    }
+    
+    .tableContainer {
+        margin: 0 -20px;
+        width: calc(100% + 40px);
+        border-radius: 0;
+    }
+    
+    .tableResponsive {
+        padding: 0 20px;
+    }
+    
+    .reportTable {
+        min-width: 900px;
+    }
+    
+    .paginationContainer {
+        flex-direction: column;
+        gap: 10px;
+        align-items: flex-start;
+    }
+    
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        width: 18px;
+        height: 18px;
+    }
+    
+    .dateLabel {
+        font-size: 13px;
+    }
+    
+    .date-focused,
+    .date-has-value {
+        font-size: 11px;
+    }
+    
+    .btnExport, .btnClear {
+        padding: 8px 15px;
+        font-size: 13px;
+        flex: 1;
+    }
+    
+    .searchWrapper {
+        width: 100%;
+    }
+    
+    .productImage {
+        width: 40px;
+        height: 40px;
+    }
+    
+    .productImageHeader, .productImageCell {
+        width: 50px;
+        min-width: 50px;
+    }
+
+    .subscriptionTable {
+        font-size: 13px;
+    }
+
+    .dataCell {
+        font-size: 13px;
+    }
+
+    .formRow {
+        flex-direction: column;
+    }
+
+    .paginationControls {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .paginationBtn {
+        width: 100%;
+        height: 50px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .mainContent {
+        padding: 70px 15px 15px 15px;
+    }
+    
+    .filterSection {
+        padding: 15px;
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+        border-radius: 0;
+    }
+    
+    .filterActionsLeft {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
+    }
+    
+    .btnExport, .btnClear {
+        width: 100%;
+        justify-content: center;
+        padding: 10px 15px;
+    }
+    
+    .paginationControls {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .paginationNumber:not(.active):nth-child(n+4):not(:last-child) {
+        display: none;
+    }
+    
+    .tableContainer {
+        margin: 0 -15px;
+        width: calc(100% + 30px);
+    }
+    
+    .tableResponsive {
+        padding: 0 15px;
+    }
+    
+    .pageTitle {
+        font-size: 20px;
+    }
+    
+    .paginationInfo {
+        font-size: 12px;
+    }
+    
+    .searchWrapper {
+        padding: 8px 15px;
+    }
+    
+    .productImage {
+        width: 35px;
+        height: 35px;
+    }
+    
+    .productImageHeader, .productImageCell {
+        width: 40px;
+        min-width: 40px;
+    }
+    
+    .contentHeader {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .reportTable th, .reportTable td {
+        padding: 10px 8px;
+        font-size: 12px;
+    }
+    
+    .btnEdit, .btnDelete {
+        width: 28px;
+        height: 28px;
+    }
+
+    .subscriptionHeader {
+        display: none;
+    }
+    .subscriptionRow {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+
+    .productCell {
+        grid-row: 1;
+        grid-column: 1;
+    }
+
+    .dataCell {
+        text-align: left;
+    }
+
+    .dataCell::before {
+        font-weight: bold;
+        color: #6c757d;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+    }
+
+    .subscriptionRow .dataCell:nth-of-type(2)::before {
+        content: 'Data da assinatura';
+    }
+
+    .subscriptionRow .dataCell:nth-of-type(3)::before {
+        content: 'Valor Total';
+    }
+}
+
+@media screen and (max-width: 360px) {
+    .orderByWrapper {
+        font-size: 12px;
+    }
+    
+    .orderByLabel {
+        font-size: 12px;
+    }
+    
+    .orderByValue {
+        font-size: 12px;
+    }
+    
+    .paginationBtn {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .productImage {
+        width: 30px;
+        height: 30px;
+    }
+    
+    .productImageHeader, .productImageCell {
+        width: 35px;
+        min-width: 35px;
+    }
+    
+    .reportTable th, .reportTable td {
+        padding: 8px 5px;
+        font-size: 11px;
+    }
+    
+    .btnEdit, .btnDelete {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+}
+
+.orderByWrapper {
+    background-color: #F9FBFF;
+    border-radius: 20px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: auto;
+    cursor: pointer;
+}
+
+.orderByLabel {
+    color: #6c757d;
+    font-size: 14px;
+    margin-right: 8px;
+    font-weight: normal;
+    pointer-events: none;
+}
+
+.orderByValue {
+    font-weight: bold;
+    color: #333;
+    font-size: 14px;
+    pointer-events: none;
+}
+
+.orderByWrapper .filterSelect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+    border: none;
+}
+
+.orderByWrapper .selectIcon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #333;
+    pointer-events: none;
+} 
+
+.orderByWrapper {
+    padding-right: 50px;
+}
+
+@media screen and (max-height: 600px) {
+    .overlay {
+        height: 100vh;
+    }
+}
+
+.searchWrapper {
+    background-color: #F9FBFF;
+    border-radius: 20px;
+    padding: 10px 15px;
+    display: flex;
+    align-items: center;
+    position: relative;
+    width: 200px;
+    transition: all 0.2s ease-in-out;
+}
+
+.searchWrapper:hover {
+    background-color: #e0e0e0;
+}
+
+.searchIcon {
+    color: #7E7E7E;
+    margin-right: 10px;
+    cursor: pointer;
+}
+
+.searchInput {
+    background: none;
+    border: none;
+    outline: none;
+    font-size: 14px;
+    color: #333;
+    width: 100%;
+}
+
+.searchInput::placeholder {
+    color: #666;
+    opacity: 0.8;
+}
+
+.searchWrapper:focus-within {
+    box-shadow: 0 0 0 2px rgba(0, 112, 225, 0.3);
+    background-color: #fff;
+}
+
+.productImageHeader {
+    width: 60px;
+    min-width: 60px;
+    padding-right: 0 !important;
+}
+
+.productImageCell {
+    width: 60px;
+    min-width: 60px;
+    padding-right: 0 !important;
+}
+
+.productImage {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    overflow: hidden;
+    background-color: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.productImage img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.productInfo {
+    display: none;
+}
+
+@media screen and (max-width: 480px) {
+    .mainContent {
+        padding: 65px 10px 10px 10px;
+    }
+    
+    .pageTitle {
+        font-size: 18px;
+    }
+    
+    .searchWrapper {
+        padding: 6px 12px;
+    }
+    
+    .searchInput {
+        font-size: 12px;
+    }
+    
+    .orderByWrapper {
+        padding: 6px 12px;
+    }
+    
+    .paginationBtn {
+        width: 26px;
+        height: 26px;
+        font-size: 11px;
+    }
+    
+    .paginationInfo {
+        font-size: 11px;
+    }
+    
+    .productImage {
+        width: 28px;
+        height: 28px;
+    }
+    
+    .productImageHeader, .productImageCell {
+        width: 32px;
+        min-width: 32px;
+    }
+}
+
+.scroll-indicator {
+    background-color: rgba(0, 112, 225, 0.8);
+    color: white;
+    text-align: center;
+    padding: 8px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    font-size: 14px;
+    transition: opacity 0.3s ease;
+}
+
+.scroll-indicator i {
+    margin-right: 5px;
+    animation: scroll-hint 1.5s infinite;
+}
+
+@keyframes scroll-hint {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+}
+
+.contentSection {
+    padding: 40px;
+}
+
+.contentCard {
+    background-color: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: none;
+}
+
+.contentCardPayment {
+    margin-left: 5%;
+}
+
+.contentCardTitle {
+    font-size: 16px;
+    font-weight: 500;
+    margin: 0;
+    color: #718096;
+}
+
+.contentCardBody {
+    padding: 10px;
+}
+
+.subscriptionInfo, 
+.subscriptionDetails, 
+.subscriptionMeta, 
+.metaItem, 
+.metaLabel, 
+.metaValue {
+    all: unset;
+}
+
+.subscriptionTable {
+    width: 55%;
+}
+
+.subscriptionHeader {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    padding: 0 15px 10px;
+    color: #6c757d;
+    font-size: 12px;
+}
+
+.productHeader {
+    justify-self: start;
+}
+
+.subscriptionRow {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    align-items: center;
+    padding: 10px;
+    border-top: 1px solid #E0E0E0;
+    border-bottom: 1px solid #E0E0E0;
+}
+
+.productCell {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.dataCell {
+    font-size: 14px;
+    font-weight: 500;
+    color: #333;
+}
+
+.subscriptionProductImage {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+}
+
+.subscriptionName {
+    font-weight: 600;
+    font-size: 14px;
+    margin: 0;
+    color: #333;
+}
+
+.radioBody {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.radioButton {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: #718096;
+}
+
+.radioButton input[type="radio"] {
+    display: none;
+}
+
+.radioButton .radio {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #A7A7A7;
+    margin-right: 10px;
+    position: relative;
+}
+
+.radioButton input[type="radio"]:checked + .radio {
+    border-color: #0071DB;
+}
+
+.radioButton input[type="radio"]:checked + .radio::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #0071DB;
+}
+
+.creditCardForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    width: 50%;
+    margin: 0px 0px 0px 20px;
+}
+
+.inputGroup {
+    display: flex;
+    flex-direction: column;
+}
+
+.input {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+
+.inputArea {
+    width: 100%;
+    padding: 10px;
+    resize: none;
+    height: 104px;
+    background-color: #FFFFFF;
+    border-radius: .5rem;
+    border: 1px solid #BDBDBD;
+    font-size: 1rem;
+}
+
+.textCount {
+  display: block;
+  margin-bottom: .2rem;
+  font-size: .9rem;
+  color: #718096;
+  text-align: end;
+}
+
+.label {
+  display: block;
+  margin-bottom: .2rem;
+  font-size: .9rem;
+  color: #718096;
+}
+
+.selectWrapper {
+    position: relative;
+    width: 100%;
+}
+
+.filterSelect {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #BDBDBD;
+    border-radius: .4rem;
+    font-size: 14px;
+    color: #718096;
+    background-color: #fff;
+    appearance: none;
+    cursor: pointer;
+    box-shadow: 0 1px 2px 0 rgba(0,0,0,0.05);
+    padding-right: 30px;
+}
+
+.filterSelect:focus {
+    outline: none;
+    border-color: #0070E1;
+}
+
+.selectIcon {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none;
+    font-size: 12px;
+}
+
+.formRow {
+    display: flex;
+    gap: 20px;
+}
+
+.formRow .inputGroup {
+    flex: 1;
+}
+
+.expiryDate {
+    display: flex;
+    gap: 10px;
+}
+
+.expiryDate .selectWrapper {
+    flex: 1;
+}
+
+.paginationControls {
+    width: 55%;
+    display: flex;
+    justify-content: flex-end;
+    gap: 25px;
+    margin-top: 20px;
+}
+
+.paginationBtn {
+    width: 150px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all .3s ease-in-out;
+    font-weight: 600;
+}
+
+.cancelBtn {
+    border: 1px solid #0070E1;
+    background-color: #fff;
+    color: #0070E1;
+}
+
+.cancelBtn:hover {
+    background-color: #0070E1;
+    color: #fff;
+}
+
+.saveBtn {
+    border: 1px solid #0070E1;
+    background-color: #0070E1;
+    color: #fff;
+}
+
+.saveBtn:hover {
+    background-color: #fff;
+    color: #0070E1;
+}
+
+/* --- Responsividade --- */
+
+@media screen and (max-width: 1200px) {
+    .subscriptionTable,
+    .paginationControls {
+        width: 80%;
+    }
+    .contentCardPayment {
+        margin-left: 0;
+    }
+    .creditCardForm {
+        width: 100%;
+        margin: 0;
+    }
+}
+
+@media screen and (max-width: 992px) {
+    .pageTitle {
+        margin: 0 0 40px 0;
+    }
+    .subscriptionTable,
+    .paginationControls {
+        width: 100%;
+    }
+    .contentSection {
+        padding: 20px;
+    }
+}
+
+@media screen and (max-width: 768px) {
+    .subscriptionTable {
+        font-size: 13px;
+    }
+
+    .dataCell {
+        font-size: 13px;
+    }
+
+    .formRow {
+        flex-direction: column;
+    }
+
+    .paginationControls {
+        flex-direction: column;
+        gap: 15px;
+        align-items: stretch;
+    }
+
+    .paginationBtn {
+        width: 100%;
+        height: 50px;
+    }
+}
+
+@media screen and (max-width: 576px) {
+    .subscriptionHeader {
+        display: none;
+    }
+    .subscriptionRow {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding-top: 20px;
+        padding-bottom: 20px;
+    }
+
+    .productCell {
+        grid-row: 1;
+        grid-column: 1;
+    }
+
+    .dataCell {
+        text-align: left;
+    }
+
+    .dataCell::before {
+        font-weight: bold;
+        color: #6c757d;
+        display: block;
+        margin-bottom: 5px;
+        font-size: 12px;
+    }
+
+    .subscriptionRow .dataCell:nth-of-type(2)::before {
+        content: 'Data da assinatura';
+    }
+
+    .subscriptionRow .dataCell:nth-of-type(3)::before {
+        content: 'Valor Total';
+    }
+}

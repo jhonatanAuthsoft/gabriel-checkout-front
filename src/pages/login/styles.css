@@ -177,6 +177,12 @@ button[type="submit"]:hover {
     text-decoration: underline #0056b3;
 }
 
+.error-message {
+    color: red;
+    text-align: center;
+    margin-bottom: 15px;
+}
+
 @media screen and (max-width: 1200px) {
     .loginContainer {
         width: 70%;

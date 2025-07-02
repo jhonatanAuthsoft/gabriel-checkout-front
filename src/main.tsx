@@ -9,7 +9,7 @@ import VendasPainel from './pages/vendas/painel';
 import Relatorios from './pages/vendas/relatorios';
 import Clientes from './pages/configuracoes/clientes';
 import Usuarios from './pages/configuracoes/usuarios';
-import Pedidos from './pages/checkout/pedidos';
+import Assinaturas from './pages/checkout/assinaturas';
 import Checkout from './pages/checkout';
 
 const router = createBrowserRouter([
@@ -42,8 +42,8 @@ const router = createBrowserRouter([
     element: <Usuarios />,
   },
   {
-    path: '/pedidos',
-    element: <Pedidos />,
+    path: '/assinaturas',
+    element: <Assinaturas />,
   },
   {
     path: '/checkout',

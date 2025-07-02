@@ -718,7 +718,7 @@
 
 .sliderText {
     font-size: 14px;
-    margin-left: 10px;
+    margin-left: 0px;
 }
 
 .input {
@@ -839,17 +839,17 @@
     margin-top: 25px;
 }
 
-#btnSave {
+.btnSave {
     background-color: #0070E1;
     color: #fff;
 }
 
-#btnSave:hover {
+.btnSave:hover {
     background-color: #fff;
     color: #0070E1;
 }
 
-#btnCancel:hover {
+.btnCancel:hover {
     background-color: #0070E1;
     color: #fff;
 }
@@ -1836,4 +1836,8 @@
 
 .formRow .inputGroup {
     width: 100%;
+}
+
+.alignEnd {
+    align-items: flex-end;
 }
