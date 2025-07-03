@@ -1,28 +1,108 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styles from './styles.module.css';
 import { FaShoppingBag, FaCog, FaSearch } from 'react-icons/fa';
-import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowRightArrowLeft, FaPencil, FaTrashCan, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
+import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowRightArrowLeft, FaPencil, FaChevronLeft, FaChevronRight } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 import productPlaceholder from '../../../assets/img/dfCirculo.png';
+import { useNavigate } from 'react-router-dom';
+
+interface Product {
+    id: number;
+    nome: string;
+    codigo: string;
+    valor: number;
+    status: string;
+    imagens: string;
+}
+
+interface Page<T> {
+    content: T[];
+    totalPages: number;
+    number: number;
+}
 
 const MeusProdutos = () => {
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [openSubMenus, setOpenSubMenus] = useState(['Produtos']);
     const [orderBy, setOrderBy] = useState('Novos');
     const [searchTerm, setSearchTerm] = useState('');
+    const [productsPage, setProductsPage] = useState<Page<Product>>({ content: [], totalPages: 0, number: 0 });
+    const [error, setError] = useState<string | null>(null);
+    const [showInactive, setShowInactive] = useState(false);
 
-    const initialProducts = [
-        { id: 1, name: 'Produto 1', code: '999999', price: 'R$ 000,00', affiliates: 0, sales: 0, status: 'Status do Produto', image: productPlaceholder },
-        { id: 2, name: 'Produto 2', code: '999999', price: 'R$ 100,00', affiliates: 5, sales: 10, status: 'Status do Produto', image: productPlaceholder },
-        { id: 3, name: 'Produto 3', code: '999999', price: 'R$ 150,00', affiliates: 2, sales: 8, status: 'Status do Produto', image: productPlaceholder },
-        { id: 4, name: 'Produto 4', code: '999999', price: 'R$ 200,00', affiliates: 10, sales: 25, status: 'Status do Produto', image: productPlaceholder },
-        { id: 5, name: 'Produto 5', code: '999999', price: 'R$ 50,00', affiliates: 1, sales: 3, status: 'Status do Produto', image: productPlaceholder },
-        { id: 6, name: 'Produto 6', code: '999999', price: 'R$ 300,00', affiliates: 15, sales: 50, status: 'Status do Produto', image: productPlaceholder },
-    ];
-
-    const [products, setProducts] = useState(initialProducts);
+    const navigate = useNavigate();
     const overlayRef = useRef<HTMLDivElement>(null);
 
+    const fetchProducts = async (page = 0, size = 10, name = '') => {
+        setError(null);
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const apiToken = localStorage.getItem('authToken');
+
+        if (!apiUrl || !apiToken) {
+            setError('API não configurada ou token ausente.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}produto/listar-todos?page=${page}&size=${size}&nome_busca=${name}`, {
+                headers: {
+                    'Authorization': `Bearer ${apiToken}`,
+                },
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao buscar produtos.');
+            }
+
+            const data: Page<Product> = await response.json();
+            console.log('API Response - Products:', data.content);
+            setProductsPage(data);
+        } catch (err: any) {
+            setError(err.message);
+            console.error(err);
+        }
+    };
+
+    useEffect(() => {
+        fetchProducts(0, 10, searchTerm);
+    }, [searchTerm]);
+
+    const handleStatusChange = async (productId: number, newStatus: string) => {
+        setError(null);
+        try {
+            const apiToken = localStorage.getItem('authToken');
+            const apiUrl = import.meta.env.VITE_API_URL;
+            if (!apiUrl || !apiToken) {
+                setError("API não configurada ou token ausente.");
+                return;
+            }
+
+            const response = await fetch(`${apiUrl}produto/alterar-status/${productId}/${newStatus}`, {
+                method: 'PATCH',
+                headers: { 'Authorization': `Bearer ${apiToken}` },
+            });
+
+            if (response.ok) {
+                setProductsPage(prevPage => ({
+                    ...prevPage,
+                    content: prevPage.content.map(product =>
+                        product.id === productId
+                            ? { ...product, status: newStatus }
+                            : product
+                    ),
+                }));
+            } else {
+                const errorData = await response.json().catch(() => ({}));
+                setError(errorData.message || 'Não foi possível alterar o status do produto.');
+            }
+        } catch (err) {
+            setError('Erro de comunicação. Verifique sua conexão e tente novamente.');
+        }
+    };
+
+    const handleEdit = (productId: number) => {
+        navigate(`/produtos/editar/${productId}`);
+    };
 
     const toggleMobileMenu = () => {
         setSidebarActive(prev => !prev);
@@ -52,15 +132,7 @@ const MeusProdutos = () => {
     }, [isSidebarActive]);
 
     const handleSearch = () => {
-        const term = searchTerm.trim().toLowerCase();
-        if (!term) {
-            setProducts(initialProducts);
-            return;
-        }
-        const filteredProducts = initialProducts.filter(p => 
-            p.name.toLowerCase().includes(term)
-        );
-        setProducts(filteredProducts);
+        fetchProducts(0, 10, searchTerm);
     };
 
     const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -151,6 +223,16 @@ const MeusProdutos = () => {
                                     onKeyUp={handleKeyUp}
                                 />
                             </div>
+                            <div className={styles.checkboxWrapper}>
+                                <input
+                                    type="checkbox"
+                                    id="showInactive"
+                                    checked={showInactive}
+                                    onChange={(e) => setShowInactive(e.target.checked)}
+                                    className={styles.checkboxInput}
+                                />
+                                <label htmlFor="showInactive" className={styles.checkboxLabel}>Mostrar inativos</label>
+                            </div>
                         </div>
                         <div className={styles.filterActionsRight}>
                             <div className={styles.selectWrapper + ' ' + styles.orderByWrapper}>
@@ -167,6 +249,7 @@ const MeusProdutos = () => {
                         </div>
                     </div>
                 </div>
+                {error && <div className={styles.errorBanner}>{error}</div>}
                 <div className={styles.tableContainer}>
                     <div className={styles.tableResponsive}>
                         <table className={styles.reportTable}>
@@ -186,28 +269,34 @@ const MeusProdutos = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {products.map(product => (
+                                {productsPage.content
+                                    .filter(p => showInactive || p.status?.toUpperCase() === 'ATIVO')
+                                    .map(product => (
                                     <tr key={product.id}>
                                         <td className={styles.productImageCell}>
                                             <div className={styles.productImage}>
-                                                <img src={product.image} alt={product.name} />
+                                                <img src={product.imagens || productPlaceholder} alt={product.nome ?? 'Produto sem nome'} />
                                             </div>
                                         </td>
-                                        <td>{product.name}</td>
-                                        <td>{product.code}</td>
-                                        <td>{product.price}</td>
-                                        <td>{product.affiliates}</td>
-                                        <td>{product.sales}</td>
-                                        <td className={styles.textCenter}>
-                                            <span className={styles.statusProduto}>{product.status}</span>
+                                        <td>{product.nome ?? 'N/A'}</td>
+                                        <td>{product.codigo ?? 'N/A'}</td>
+                                        <td>{`R$ ${product.valor?.toFixed(2) ?? '0.00'}`}</td>
+                                        <td>0</td>
+                                        <td>0</td>
+                                        <td className={`${styles.textCenter} ${styles.statusCell}`}>
+                                            <label className={styles.switch}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={product.status?.toUpperCase() === 'ATIVO'}
+                                                    onChange={() => handleStatusChange(product.id, product.status?.toUpperCase() === 'ATIVO' ? 'INATIVO' : 'ATIVO')}
+                                                />
+                                                <span className={`${styles.slider} ${styles.round}`}></span>
+                                            </label>
                                         </td>
                                         <td className={styles.btnActions}>
                                             <div className={styles.actionsBtn}>
-                                                <button className={styles.btnEdit}>
+                                                <button className={styles.btnEdit} onClick={() => handleEdit(product.id)}>
                                                     <FaPencil />
-                                                </button>
-                                                <button className={styles.btnDelete}>
-                                                    <FaTrashCan />
                                                 </button>
                                             </div>
                                         </td>
@@ -218,18 +307,17 @@ const MeusProdutos = () => {
                     </div>
                 </div>
                 <div className={styles.paginationContainer}>
-                    <div className={styles.paginationInfo}>Exibindo página 1 de 20</div>
+                    <div className={styles.paginationInfo}>Exibindo página {productsPage.number + 1} de {productsPage.totalPages}</div>
                     <div className={styles.paginationControls}>
-                        <button className={`${styles.paginationBtn} ${styles.paginationPrev}`}>
+                        <button className={`${styles.paginationBtn} ${styles.paginationPrev}`} onClick={() => fetchProducts(productsPage.number - 1)} disabled={productsPage.number === 0}>
                             <FaChevronLeft />
                         </button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber} ${styles.active}`}>1</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>2</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>3</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>4</button>
-                        <span className={styles.paginationEllipsis}>...</span>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>20</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNext}`}>
+                        {[...Array(productsPage.totalPages).keys()].map(pageNumber => (
+                             <button key={pageNumber} className={`${styles.paginationBtn} ${styles.paginationNumber} ${productsPage.number === pageNumber ? styles.active : ''}`} onClick={() => fetchProducts(pageNumber)}>
+                                {pageNumber + 1}
+                            </button>
+                        ))}
+                        <button className={`${styles.paginationBtn} ${styles.paginationNext}`} onClick={() => fetchProducts(productsPage.number + 1)} disabled={productsPage.number >= productsPage.totalPages - 1}>
                             <FaChevronRight />
                         </button>
                     </div>

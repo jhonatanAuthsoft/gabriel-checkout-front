@@ -45,7 +45,7 @@ const NovoProduto: React.FC = () => {
             },
             urlPersonalizada: ''
         },
-        checkout: {
+        checkoutProduto: {
             exibicoes: {
                 exibirImagensProduto: true,
                 exibirSelos: true,
@@ -59,6 +59,7 @@ const NovoProduto: React.FC = () => {
     
     const [imagens, setImagens] = useState<File[]>([]);
     const [mapeamentoImagens, setMapeamentoImagens] = useState<{ nomeArquivo: string, tipo: string }[]>([]);
+    const [imagensParaDeletar, setImagensParaDeletar] = useState<number[]>([]);
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [activeSubMenus, setActiveSubMenus] = useState<string[]>(['Produtos']);
     const [activeSection, setActiveSection] = useState('dados');
@@ -69,10 +70,41 @@ const NovoProduto: React.FC = () => {
     const [tipoCobranca, setTipoCobranca] = useState('unica');
     const [primeiraParcela, setPrimeiraParcela] = useState('igual');
 
+    const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
+    const [newPlano, setNewPlano] = useState(initialPlanoState);
+
+    const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
+    const [newCupom, setNewCupom] = useState(initialCupomState);
+
     const overlayRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const fetchProductData = async () => {
+            if (!id) return;
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const token = localStorage.getItem('authToken');
+            if (!apiUrl || !token) {
+                console.error("API URL ou token não encontrado.");
+                return;
+            }
+            try {
+                const response = await fetch(`${apiUrl}produto/listar-por-id/${id}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!response.ok) throw new Error('Falha ao carregar dados do produto.');
+                
+                const data = await response.json();
+                setProdutoData(data);
+            } catch (error) {
+                console.error("Erro ao buscar produto:", error);
+            }
+        };
+
+        fetchProductData();
+    }, [id]);
 
     useEffect(() => {
         const sidebar = sidebarRef.current;
@@ -146,9 +178,11 @@ const NovoProduto: React.FC = () => {
 
     const handleSave = async () => {
         const formData = new FormData();
+        
         const dadosPayload = {
             dados: produtoData,
             mapeamentoImagens: mapeamentoImagens,
+            imagensParaDeletar: imagensParaDeletar
         };
 
         formData.append('dados', JSON.stringify(dadosPayload));
@@ -157,16 +191,16 @@ const NovoProduto: React.FC = () => {
             formData.append('imagens', file);
         });
 
-        const token = import.meta.env.VITE_API_TOKEN || localStorage.getItem('authToken');
+        const token = localStorage.getItem('authToken');
         const apiUrl = import.meta.env.VITE_API_URL;
 
         if (!apiUrl) {
-            console.error('URL da API não configurada. Verifique o arquivo .env e reinicie o servidor.');
+            console.error('URL da API não configurada.');
             return;
         }
 
         if (!token) {
-            console.error('Token de autenticação não encontrado. Faça login ou configure VITE_API_TOKEN no .env.');
+            console.error('Token de autenticação não encontrado.');
             return;
         }
 
@@ -177,7 +211,7 @@ const NovoProduto: React.FC = () => {
             const response = await fetch(url, {
                 method: method,
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
                 },
                 body: formData
             });
@@ -185,9 +219,9 @@ const NovoProduto: React.FC = () => {
             if (response.ok) {
                 const result = await response.json();
                 console.log('Produto salvo:', result);
-                navigate('/produtos');
+                navigate('/produtos/');
             } else {
-                const errorData = await response.json();
+                const errorData = await response.json().catch(() => response.text());
                 console.error('Falha ao salvar produto', errorData);
             }
         } catch (error) {
@@ -287,6 +321,118 @@ const NovoProduto: React.FC = () => {
                 console.error('Fallback copy failed: ', err);
             }
         }
+    };
+
+    const handleRemoveImage = (index: number, imageId?: number) => {
+        if (imageId) {
+            setImagensParaDeletar(prev => [...prev, imageId]);
+        }
+        
+        setImagens(prev => prev.filter((_, i) => i !== index));
+        setMapeamentoImagens(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleAddPergunta = () => {
+        setProdutoData(prev => ({
+            ...prev,
+            checkoutProduto: {
+                ...prev.checkoutProduto,
+                perguntas: [...prev.checkoutProduto.perguntas, { pergunta: '', resposta: '' }]
+            }
+        }));
+    };
+
+    const handleUpdatePergunta = (index: number, field: string, value: string) => {
+        setProdutoData(prev => {
+            const novasPerguntas = [...prev.checkoutProduto.perguntas];
+            novasPerguntas[index] = { ...novasPerguntas[index], [field]: value };
+            
+            return {
+                ...prev,
+                checkoutProduto: {
+                    ...prev.checkoutProduto,
+                    perguntas: novasPerguntas
+                }
+            };
+        });
+    };
+
+    const handleRemovePergunta = (index: number) => {
+        setProdutoData(prev => {
+            const novasPerguntas = prev.checkoutProduto.perguntas.filter((_, i) => i !== index);
+            
+            return {
+                ...prev,
+                checkoutProduto: {
+                    ...prev.checkoutProduto,
+                    perguntas: novasPerguntas
+                }
+            };
+        });
+    };
+
+    const handleSavePlano = () => {
+        handleAddPlano(newPlano);
+        setNewPlano(initialPlanoState);
+        setShowPlanoForm(false);
+    };
+
+    const handleSaveCupom = () => {
+        handleAddCupom(newCupom);
+        setNewCupom(initialCupomState);
+        setShowCupomForm(false);
+    };
+
+    const handleAddPlano = (novoPlano: any) => {
+        setProdutoData(prev => ({
+            ...prev,
+            planos: [...prev.planos, novoPlano]
+        }));
+    };
+
+    const handleUpdatePlano = (index: number, planoAtualizado: any) => {
+        setProdutoData(prev => {
+            const novosPlanos = [...prev.planos];
+            novosPlanos[index] = planoAtualizado;
+            
+            return {
+                ...prev,
+                planos: novosPlanos
+            };
+        });
+    };
+
+    const handleRemovePlano = (index: number) => {
+        setProdutoData(prev => ({
+            ...prev,
+            planos: prev.planos.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleAddCupom = (novoCupom: any) => {
+        setProdutoData(prev => ({
+            ...prev,
+            cupom: [...prev.cupom, novoCupom]
+        }));
+    };
+
+    const handleUpdateCupom = (index: number, cupomAtualizado: any) => {
+        setProdutoData(prev => {
+            const novosCupons = [...prev.cupom];
+            novosCupons[index] = cupomAtualizado;
+            
+            return {
+                ...prev,
+                cupom: novosCupons
+            };
+        });
+    };
+
+    const handleRemoveCupom = (index: number) => {
+        setProdutoData(prev => ({
+            ...prev,
+            cupom: prev.cupom.filter((_, i) => i !== index)
+        }));
     };
 
     return (
@@ -976,8 +1122,8 @@ const NovoProduto: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.slideCheckbox}
                                                         id="imagemProduto"
-                                                        name="checkout.exibicoes.exibirImagensProduto"
-                                                        checked={produtoData.checkout.exibicoes.exibirImagensProduto}
+                                                        name="checkoutProduto.exibicoes.exibirImagensProduto"
+                                                        checked={produtoData.checkoutProduto.exibicoes.exibirImagensProduto}
                                                         onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                     />
                                                     <label className={styles.slideSwitch} htmlFor="imagemProduto">
@@ -994,8 +1140,8 @@ const NovoProduto: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.slideCheckbox}
                                                         id="faq"
-                                                        name="checkout.exibicoes.exibirFaq"
-                                                        checked={produtoData.checkout.exibicoes.exibirFaq}
+                                                        name="checkoutProduto.exibicoes.exibirFaq"
+                                                        checked={produtoData.checkoutProduto.exibicoes.exibirFaq}
                                                         onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                     />
                                                     <label className={styles.slideSwitch} htmlFor="faq">
@@ -1012,8 +1158,8 @@ const NovoProduto: React.FC = () => {
                                                         type="checkbox"
                                                         className={styles.slideCheckbox}
                                                         id="seloGarantia"
-                                                        name="checkout.exibicoes.exibirSelos"
-                                                        checked={produtoData.checkout.exibicoes.exibirSelos}
+                                                        name="checkoutProduto.exibicoes.exibirSelos"
+                                                        checked={produtoData.checkoutProduto.exibicoes.exibirSelos}
                                                         onChange={(e) => handleInputChange(e.target.name, e.target.checked)}
                                                     />
                                                     <label className={styles.slideSwitch} htmlFor="seloGarantia">
@@ -1025,6 +1171,42 @@ const NovoProduto: React.FC = () => {
                                         </div>
                                     </div>
                                     <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                </div>
+                            </div>
+                            <div className={styles.contentCard}>
+                                <div className={styles.contentCardHeader}>
+                                    <h2 className={styles.contentCardTitle}>Perguntas (FAQ)</h2>
+                                </div>
+                                <div className={styles.contentCardBody}>
+                                    {produtoData.checkoutProduto.perguntas.map((item, index) => (
+                                        <div key={item.id || index} className={styles.dataSection} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
+                                            <div className={styles.dataCol2}>
+                                                <div className={styles.inputGroup}>
+                                                    <label className={styles.label}>Pergunta</label>
+                                                    <input 
+                                                        type="text" 
+                                                        className={styles.input} 
+                                                        value={item.pergunta} 
+                                                        onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
+                                                    />
+                                                </div>
+                                            </div>
+                                            <div className={styles.dataCol}>
+                                                 <div className={styles.inputGroup}>
+                                                    <label className={styles.label}>Resposta</label>
+                                                    <textarea
+                                                        className={styles.inputArea}
+                                                        value={item.resposta}
+                                                        onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
+                                                    />
+                                                </div>
+                                            </div>
+                                             <div className={styles.dataCol} style={{justifyContent: 'center', alignItems: 'center', display: 'flex'}}>
+                                                 <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemovePergunta(index)}><FaTrashAlt /></button>
+                                             </div>
+                                        </div>
+                                    ))}
+                                    <button className={styles.paginationBtn2} style={{marginTop: '10px'}} onClick={handleAddPergunta}>Nova Pergunta</button>
                                 </div>
                             </div>
                             <div className={styles.paginationContainer}>
@@ -1051,7 +1233,7 @@ const NovoProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="planoNome">
                                                             Nome
                                                         </label>
-                                                        <input type="text" name="planoNome" className={styles.input} />
+                                                        <input type="text" name="planoNome" className={styles.input} value={newPlano.nome} onChange={(e) => setNewPlano(p => ({...p, nome: e.target.value}))}/>
                                                     </div>
                                                 </div>
                                                 <div className={styles.dataCol}>
@@ -1064,7 +1246,9 @@ const NovoProduto: React.FC = () => {
                                                                 <input
                                                                     type="radio"
                                                                     name="periodicidade"
-                                                                    defaultValue="mensal"
+                                                                    value="MENSAL"
+                                                                    checked={newPlano.peridiocidade === 'MENSAL'}
+                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Mensal
@@ -1073,7 +1257,9 @@ const NovoProduto: React.FC = () => {
                                                                 <input
                                                                     type="radio"
                                                                     name="periodicidade"
-                                                                    defaultValue="trimestral"
+                                                                    value="TRIMESTRAL"
+                                                                    checked={newPlano.peridiocidade === 'TRIMESTRAL'}
+                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Trimestral
@@ -1082,7 +1268,9 @@ const NovoProduto: React.FC = () => {
                                                                 <input
                                                                     type="radio"
                                                                     name="periodicidade"
-                                                                    defaultValue="semestral"
+                                                                    value="SEMESTRAL"
+                                                                    checked={newPlano.peridiocidade === 'SEMESTRAL'}
+                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Semestral
@@ -1091,7 +1279,9 @@ const NovoProduto: React.FC = () => {
                                                                 <input
                                                                     type="radio"
                                                                     name="periodicidade"
-                                                                    defaultValue="anual"
+                                                                    value="ANUAL"
+                                                                    checked={newPlano.peridiocidade === 'ANUAL'}
+                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Anual
@@ -1104,7 +1294,7 @@ const NovoProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="preco">
                                                             Preço
                                                         </label>
-                                                        <input type="text" name="preco" className={styles.input} />
+                                                        <input type="number" name="preco" className={styles.input} value={newPlano.preco} onChange={(e) => setNewPlano(p => ({...p, preco: parseFloat(e.target.value)}))} />
                                                     </div>
                                                     <div className={styles.sliderGroup}>
                                                         <div className={styles.switchContainer}>
@@ -1112,6 +1302,8 @@ const NovoProduto: React.FC = () => {
                                                                 type="checkbox"
                                                                 className={styles.slideCheckbox}
                                                                 id="planoGratis"
+                                                                checked={newPlano.gratis}
+                                                                onChange={(e) => setNewPlano(p => ({...p, gratis: e.target.checked}))}
                                                             />
                                                             <label className={styles.slideSwitch} htmlFor="planoGratis">
                                                                 <span className={styles.sliderSwitch} />
@@ -1129,7 +1321,8 @@ const NovoProduto: React.FC = () => {
                                                             id="planoDescArea"
                                                             name="planoDescricao"
                                                             className={styles.inputArea}
-                                                            defaultValue={""}
+                                                            value={newPlano.descricao}
+                                                            onChange={(e) => setNewPlano(p => ({...p, descricao: e.target.value}))}
                                                         />
                                                     </div>
                                                 </div>
@@ -1138,12 +1331,9 @@ const NovoProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="formato">
                                                             Primeira Parcela
                                                         </label>
-                                                        <select className={styles.filterSelect}>
-                                                            <option value="" />
-                                                            <option value="fisico">Hoje</option>
-                                                            <option value="digital">Primeiro dia do mês</option>
-                                                            <option value="digital">Último dia do mês</option>
-                                                            <option value="digital">Dias específicos</option>
+                                                        <select className={styles.filterSelect} value={newPlano.primeiraParcela} onChange={(e) => setNewPlano(p => ({...p, primeiraParcela: e.target.value}))}>
+                                                            <option value="IGUAL">Igual as demais</option>
+                                                            <option value="DIFERENTE">Valor diferente</option>
                                                         </select>
                                                         <FaChevronDown className={styles.selectIcon} />
                                                     </div>
@@ -1151,19 +1341,21 @@ const NovoProduto: React.FC = () => {
                                                 <div className={styles.dataCol8}>
                                                     <div className={styles.inputGroup}>
                                                         <label className={styles.label} htmlFor="planoReferencia">
-                                                            Referência
+                                                            Recorrência
                                                         </label>
                                                         <input
                                                             type="text"
                                                             name="planoReferencia"
                                                             className={styles.input}
+                                                            value={newPlano.recorrencia}
+                                                            onChange={(e) => setNewPlano(p => ({...p, recorrencia: e.target.value}))}
                                                         />
                                                     </div>
                                                     <div className={styles.inputGroup}>
                                                         <label className={styles.label} htmlFor="planoSku">
                                                             SKU
                                                         </label>
-                                                        <input type="text" name="planoSku" className={styles.input} />
+                                                        <input type="text" name="planoSku" className={styles.input} value={newPlano.sku} onChange={(e) => setNewPlano(p => ({...p, sku: e.target.value}))} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1172,7 +1364,7 @@ const NovoProduto: React.FC = () => {
                                     <div className={styles.paginationContainer}>
                                         <div className={styles.paginationControls}>
                                             <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => setShowPlanoForm(false)}>Cancelar</button>
-                                            <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar</button>
+                                            <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSavePlano} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar Plano</button>
                                         </div>
                                     </div>
                                 </div>
@@ -1197,19 +1389,21 @@ const NovoProduto: React.FC = () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
+                                                            {produtoData.planos.map((plano, index) => (
+                                                            <React.Fragment key={plano.id || index}>
                                                             <tr>
                                                                 <td>
-                                                                    <button className={styles.btnExpand} onClick={() => toggleRowExpansion('1')}>
-                                                                        {expandedRows['1'] ? <FaMinus /> : <FaPlus />}
+                                                                        <button className={styles.btnExpand} onClick={() => toggleRowExpansion(String(index))}>
+                                                                            {expandedRows[String(index)] ? <FaMinus /> : <FaPlus />}
                                                                     </button>
-                                                                    DESIGNERFLIX
+                                                                        {plano.nome}
                                                                 </td>
-                                                                <td>Mensal</td>
+                                                                    <td>{plano.peridiocidade}</td>
                                                                 <td>
                                                                     <div className={styles.urlCheckoutContainer}>
-                                                                        <input id="urlCheckout1" type="text" className={styles.urlCheckoutInput} defaultValue="http://checkout.url/1" />
-                                                                        <button className={`${styles.btnCopyUrl} ${copiedUrlStatuses['urlCheckout1'] ? styles.copied : ''}`} title="Copiar URL" onClick={() => handleCopyUrl('urlCheckout1')}>
-                                                                            {copiedUrlStatuses['urlCheckout1'] ? <FaCheck /> : <FaCopy />}
+                                                                            <input id={`urlCheckout${index}`} type="text" className={styles.urlCheckoutInput} defaultValue="http://checkout.url/1" readOnly />
+                                                                            <button className={`${styles.btnCopyUrl} ${copiedUrlStatuses[`urlCheckout${index}`] ? styles.copied : ''}`} title="Copiar URL" onClick={() => handleCopyUrl(`urlCheckout${index}`)}>
+                                                                                {copiedUrlStatuses[`urlCheckout${index}`] ? <FaCheck /> : <FaCopy />}
                                                                         </button>
                                                                     </div>
                                                                 </td>
@@ -1247,12 +1441,12 @@ const NovoProduto: React.FC = () => {
                                                                     <div className={styles.btnActions}>
                                                                         <button className={`${styles.btnAction} ${styles.btnCopy}`}><FaCopy /></button>
                                                                         <button className={`${styles.btnAction} ${styles.btnEdit}`}><FaPencilAlt /></button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`}><FaTrashAlt /></button>
+                                                                            <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemovePlano(index)}><FaTrashAlt /></button>
                                                                     </div>
                                                                 </td>
                                                             </tr>
-                                                            {expandedRows['1'] && (
-                                                                <tr className={styles.expandedRow} id="expandedContent1">
+                                                                {expandedRows[String(index)] && (
+                                                                <tr className={styles.expandedRow} id={`expandedContent${index}`}>
                                                                     <td colSpan={6}>
                                                                         <div className={styles.expandedContent}>
                                                                             <div className={styles.expandedInfo}>
@@ -1272,20 +1466,16 @@ const NovoProduto: React.FC = () => {
                                                                                     <span className={styles.infoLabel}>Descrição</span>
                                                                                 </div>
                                                                                 <div className={styles.infoValues}>
-                                                                                    <span className={styles.infoValue}>R$ 0,00</span>
+                                                                                    <span className={styles.infoValue}>R$ {plano.preco}</span>
                                                                                     <span className={styles.infoValue}>
-                                                                                        Igual as demais
+                                                                                        {plano.primeiraParcela}
                                                                                     </span>
                                                                                     <span className={styles.infoValue}>0</span>
                                                                                     <span className={styles.infoValue}>Não</span>
-                                                                                    <span className={styles.infoValue}>xxxxx</span>
-                                                                                    <span className={styles.infoValue}>xxxxx</span>
+                                                                                    <span className={styles.infoValue}>{plano.recorrencia}</span>
+                                                                                    <span className={styles.infoValue}>{plano.sku}</span>
                                                                                     <span className={styles.infoValue}>
-                                                                                        Lorem ipsum is simply dummy text of the
-                                                                                        printing and typesetting industry. Lorem
-                                                                                        ipsum has been the industry's standard dummy
-                                                                                        text ever since the 1500s, when an unknown
-                                                                                        printer took
+                                                                                       {plano.descricao}
                                                                                     </span>
                                                                                 </div>
                                                                             </div>
@@ -1293,102 +1483,8 @@ const NovoProduto: React.FC = () => {
                                                                     </td>
                                                                 </tr>
                                                             )}
-                                                            <tr>
-                                                                <td>
-                                                                    <button className={styles.btnExpand} onClick={() => toggleRowExpansion('2')}>
-                                                                        {expandedRows['2'] ? <FaMinus /> : <FaPlus />}
-                                                                    </button>
-                                                                    DESIGNERFLIX
-                                                                </td>
-                                                                <td>Mensal</td>
-                                                                <td>
-                                                                    <div className={styles.urlCheckoutContainer}>
-                                                                        <input id="urlCheckout2" type="text" className={styles.urlCheckoutInput} defaultValue="http://checkout.url/2" />
-                                                                        <button className={`${styles.btnCopyUrl} ${copiedUrlStatuses['urlCheckout2'] ? styles.copied : ''}`} title="Copiar URL" onClick={() => handleCopyUrl('urlCheckout2')}>
-                                                                            {copiedUrlStatuses['urlCheckout2'] ? <FaCheck /> : <FaCopy />}
-                                                                        </button>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div className={styles.switchContainer}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className={styles.slideCheckbox}
-                                                                            id="planoAtivo2"
-                                                                        />
-                                                                        <label
-                                                                            className={styles.slideSwitch}
-                                                                            htmlFor="planoAtivo2"
-                                                                        >
-                                                                            <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
-                                                                </td>
-                                                                <td className={styles['text-center']}>
-                                                                    <div className={styles.switchContainer}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className={styles.slideCheckbox}
-                                                                            id="planoPrivado2"
-                                                                        />
-                                                                        <label
-                                                                            className={styles.slideSwitch}
-                                                                            htmlFor="planoPrivado2"
-                                                                        >
-                                                                            <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
-                                                                </td>
-                                                                <td className={`${styles['text-center']}`}>
-                                                                    <div className={styles.btnActions}>
-                                                                        <button className={`${styles.btnAction} ${styles.btnCopy}`}><FaCopy /></button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`}><FaPencilAlt /></button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`}><FaTrashAlt /></button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            {expandedRows['2'] && (
-                                                                <tr className={styles.expandedRow} id="expandedContent2">
-                                                                    <td colSpan={6}>
-                                                                        <div className={styles.expandedContent}>
-                                                                            <div className={styles.expandedInfo}>
-                                                                                <div className={styles.infoLabels}>
-                                                                                    <span className={styles.infoLabel}>Preço</span>
-                                                                                    <span className={styles.infoLabel}>
-                                                                                        Primeira Parcela
-                                                                                    </span>
-                                                                                    <span className={styles.infoLabel}>
-                                                                                        Máximo Recorrência
-                                                                                    </span>
-                                                                                    <span className={styles.infoLabel}>
-                                                                                        Aceita parcelar adesão
-                                                                                    </span>
-                                                                                    <span className={styles.infoLabel}>Referência</span>
-                                                                                    <span className={styles.infoLabel}>SKU</span>
-                                                                                    <span className={styles.infoLabel}>Descrição</span>
-                                                                                </div>
-                                                                                <div className={styles.infoValues}>
-                                                                                    <span className={styles.infoValue}>R$ 0,00</span>
-                                                                                    <span className={styles.infoValue}>
-                                                                                        Igual as demais
-                                                                                    </span>
-                                                                                    <span className={styles.infoValue}>0</span>
-                                                                                    <span className={styles.infoValue}>Não</span>
-                                                                                    <span className={styles.infoValue}>xxxxx</span>
-                                                                                    <span className={styles.infoValue}>xxxxx</span>
-                                                                                    <span className={styles.infoValue}>
-                                                                                        Lorem ipsum is simply dummy text of the
-                                                                                        printing and typesetting industry. Lorem
-                                                                                        ipsum has been the industry's standard dummy
-                                                                                        text ever since the 1500s, when an unknown
-                                                                                        printer took
-                                                                                    </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    </td>
-                                                                </tr>
-                                                            )}
+                                                            </React.Fragment>
+                                                            ))}
                                                         </tbody>
                                                     </table>
                                                 </div>
@@ -1415,7 +1511,7 @@ const NovoProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="cupomCodigo">
                                                             Código do Cupom
                                                         </label>
-                                                        <input type="text" name="cupomCodigo" className={styles.input} />
+                                                        <input type="text" name="cupomCodigo" className={styles.input} value={newCupom.codigoCupom} onChange={e => setNewCupom(c => ({...c, codigoCupom: e.target.value}))} />
                                                     </div>
                                                 </div>
                                                 <div className={styles.dataCol}>
@@ -1427,8 +1523,10 @@ const NovoProduto: React.FC = () => {
                                                             <label className={styles.radioButton}>
                                                                 <input
                                                                     type="radio"
-                                                                    name="periodicidade"
-                                                                    defaultValue="valor"
+                                                                    name="tipoDesconto"
+                                                                    value="VALOR"
+                                                                    checked={newCupom.tipoDesconto === 'VALOR'}
+                                                                    onChange={e => setNewCupom(c => ({...c, tipoDesconto: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Valor
@@ -1436,8 +1534,10 @@ const NovoProduto: React.FC = () => {
                                                             <label className={styles.radioButton}>
                                                                 <input
                                                                     type="radio"
-                                                                    name="periodicidade"
-                                                                    defaultValue="percentual"
+                                                                    name="tipoDesconto"
+                                                                    value="PERCENTUAL"
+                                                                    checked={newCupom.tipoDesconto === 'PERCENTUAL'}
+                                                                    onChange={e => setNewCupom(c => ({...c, tipoDesconto: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Percentual
@@ -1450,15 +1550,15 @@ const NovoProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="precoValor">
                                                             Valor
                                                         </label>
-                                                        <input type="text" name="precoValor" className={styles.input} />
+                                                        <input type="number" name="precoValor" className={styles.input} value={newCupom.valor} onChange={e => setNewCupom(c => ({...c, valor: parseFloat(e.target.value)}))} />
                                                     </div>
                                                 </div>
                                                 <div className={styles.dataCol5}>
                                                     <div className={styles.inputGroup}>
                                                         <label className={styles.label} htmlFor="url">
-                                                            Preço
+                                                            URL
                                                         </label>
-                                                        <input type="text" name="url" className={styles.input} />
+                                                        <input type="text" name="url" className={styles.input} value={newCupom.url} onChange={e => setNewCupom(c => ({...c, url: e.target.value}))} />
                                                     </div>
                                                 </div>
                                             </div>
@@ -1467,7 +1567,7 @@ const NovoProduto: React.FC = () => {
                                     <div className={styles.paginationContainer}>
                                         <div className={styles.paginationControls}>
                                             <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => setShowCupomForm(false)}>Cancelar</button>
-                                            <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar</button>
+                                            <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSaveCupom} style={{ backgroundColor: "#0070E1", color: "#fff" }}>Salvar Cupom</button>
                                         </div>
                                     </div>
                                  </div>
@@ -1501,18 +1601,19 @@ const NovoProduto: React.FC = () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            <tr>
-                                                                <td>CODCUPOM</td>
+                                                            {produtoData.cupom.map((cupom, index) => (
+                                                                <tr key={cupom.id || index}>
+                                                                    <td>{cupom.codigoCupom}</td>
                                                                 <td>
                                                                     <a
-                                                                        href="http://www.url.com"
+                                                                            href={cupom.url}
                                                                         target="_blank"
                                                                         className={styles.urlText}
                                                                     >
-                                                                        http://www.url.com
+                                                                            {cupom.url}
                                                                     </a>
                                                                 </td>
-                                                                <td>R$ 0,00</td>
+                                                                    <td>R$ {cupom.valor}</td>
                                                                 <td>99</td>
                                                                 <td>99</td>
                                                                 <td>99%</td>
@@ -1536,135 +1637,13 @@ const NovoProduto: React.FC = () => {
                                                                         <button className={`${styles.btnAction} ${styles.btnEdit}`}>
                                                                         <FaPencilAlt />
                                                                     </button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`}>
+                                                                            <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemoveCupom(index)}>
                                                                         <FaTrashAlt />
                                                                     </button>
                                                                     </div>
                                                                 </td>
                                                             </tr>
-                                                            <tr>
-                                                                <td>CODCUPOM</td>
-                                                                <td>
-                                                                    <a
-                                                                        href="http://www.url.com"
-                                                                        target="_blank"
-                                                                        className={styles.urlText}
-                                                                    >
-                                                                        http://www.url.com
-                                                                    </a>
-                                                                </td>
-                                                                <td>R$ 0,00</td>
-                                                                <td>99</td>
-                                                                <td>99</td>
-                                                                <td>99%</td>
-                                                                <td style={{ width: 51 }}>
-                                                                    <div className={styles.switchContainer}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className={styles.slideCheckbox}
-                                                                            id="cupomAtivo2"
-                                                                        />
-                                                                        <label
-                                                                            className={styles.slideSwitch}
-                                                                            htmlFor="cupomAtivo2"
-                                                                        >
-                                                                            <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div className={styles.btnActions}>
-                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`}>
-                                                                        <FaPencilAlt />
-                                                                    </button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`}>
-                                                                        <FaTrashAlt />
-                                                                    </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>CODCUPOM</td>
-                                                                <td>
-                                                                    <a
-                                                                        href="http://www.url.com"
-                                                                        target="_blank"
-                                                                        className={styles.urlText}
-                                                                    >
-                                                                        http://www.url.com
-                                                                    </a>
-                                                                </td>
-                                                                <td>R$ 0,00</td>
-                                                                <td>99</td>
-                                                                <td>99</td>
-                                                                <td>99%</td>
-                                                                <td style={{ width: 51 }}>
-                                                                    <div className={styles.switchContainer}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className={styles.slideCheckbox}
-                                                                            id="cupomAtivo3"
-                                                                        />
-                                                                        <label
-                                                                            className={styles.slideSwitch}
-                                                                            htmlFor="cupomAtivo3"
-                                                                        >
-                                                                            <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div className={styles.btnActions}>
-                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`}>
-                                                                        <FaPencilAlt />
-                                                                    </button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`}>
-                                                                        <FaTrashAlt />
-                                                                    </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
-                                                            <tr>
-                                                                <td>CODCUPOM</td>
-                                                                <td>
-                                                                    <a
-                                                                        href="http://www.url.com"
-                                                                        target="_blank"
-                                                                        className={styles.urlText}
-                                                                    >
-                                                                        http://www.url.com
-                                                                    </a>
-                                                                </td>
-                                                                <td>R$ 0,00</td>
-                                                                <td>99</td>
-                                                                <td>99</td>
-                                                                <td>99%</td>
-                                                                <td style={{ width: 51 }}>
-                                                                    <div className={styles.switchContainer}>
-                                                                        <input
-                                                                            type="checkbox"
-                                                                            className={styles.slideCheckbox}
-                                                                            id="cupomAtivo4"
-                                                                        />
-                                                                        <label
-                                                                            className={styles.slideSwitch}
-                                                                            htmlFor="cupomAtivo4"
-                                                                        >
-                                                                            <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
-                                                                </td>
-                                                                <td>
-                                                                    <div className={styles.btnActions}>
-                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`}>
-                                                                        <FaPencilAlt />
-                                                                    </button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`}>
-                                                                        <FaTrashAlt />
-                                                                    </button>
-                                                                    </div>
-                                                                </td>
-                                                            </tr>
+                                                            ))}
                                                         </tbody>
                                                     </table>
                                                 </div>
