@@ -17,7 +17,7 @@ jobs:
           ls -la /home/authsoft/Documentos/gabriel-checkout
           ls -la /home/authsoft/Documentos/gabriel-checkout/gabriel-checkout-front
 
-      - name: Atualiza repositório ETA-BACK localmente
+      - name: Atualiza repositório gabriel-checkout-front localmente
         run: |
           cd /home/authsoft/Documentos/gabriel-checkout/gabriel-checkout-front
           git pull origin staging
