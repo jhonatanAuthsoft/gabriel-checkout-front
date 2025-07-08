@@ -1,0 +1,29 @@
+name: Deploy gabriel-checkout-front
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  deploy:
+    runs-on: [self-hosted]
+
+    steps:
+      - name: "Debug: verificar caminho e permissões"
+        run: |
+          whoami
+          pwd
+          ls -la /home/authsoft/Documentos/gabriel-checkout
+          ls -la /home/authsoft/Documentos/gabriel-checkout/gabriel-checkout-front
+
+      - name: Atualiza repositório ETA-BACK localmente
+        run: |
+          cd /home/authsoft/Documentos/gabriel-checkout/gabriel-checkout-front
+          git pull origin staging
+
+      - name: Rebuild e restart containers
+        run: |
+          cd /home/authsoft/Documentos/gabriel-checkout
+          docker compose build frontend
+          docker compose up -d
