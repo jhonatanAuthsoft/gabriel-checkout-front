@@ -922,6 +922,10 @@ input[type="date"].has-value::-webkit-datetime-edit {
     justify-content: center;
 }
 
+.btnDelete:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+}
+
 .btnAction {
     background: none;
     border: none;
@@ -1517,4 +1521,16 @@ input[type="date"].has-value::-webkit-datetime-edit {
         50% { transform: translateX(3px); }
         100% { transform: translateX(-3px); }
     }
+}
+
+.addressSection {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid #eee;
+}
+
+.addressTitle {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
 }

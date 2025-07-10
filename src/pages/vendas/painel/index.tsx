@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import styles from './styles.module.css';
 import Chart from 'chart.js/auto';
 import type { Chart as ChartType } from 'chart.js';
-import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaChartBar, FaDollarSign, FaUserSlash, FaShoppingCart, FaArrowUp, FaArrowDown } from 'react-icons/fa';
+import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaChartBar, FaDollarSign, FaUserSlash, FaShoppingCart, FaArrowUp, FaArrowDown, FaExpandAlt } from 'react-icons/fa';
 import { FaArrowRightFromBracket } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 
@@ -181,6 +181,40 @@ const VendasPainel = () => {
         }
     };
 
+    const chargebackDataSets = {
+        'Últimos 6 Meses': [
+            { month: 'Janeiro', value: 170 }, { month: 'Fevereiro', value: 90 }, { month: 'Março', value: 200 },
+            { month: 'Abril', value: 47 }, { month: 'Maio', value: 25 }, { month: 'Junho', value: 49 },
+        ],
+        'Últimos 3 Meses': [
+            { month: 'Abril', value: 47 }, { month: 'Maio', value: 25 }, { month: 'Junho', value: 49 },
+        ],
+        'Último Ano': [
+            { month: 'Jan', value: 170 }, { month: 'Fev', value: 90 }, { month: 'Mar', value: 200 },
+            { month: 'Abr', value: 47 }, { month: 'Mai', value: 25 }, { month: 'Jun', value: 49 },
+            { month: 'Jul', value: 150 }, { month: 'Ago', value: 120 }, { month: 'Set', value: 180 },
+            { month: 'Out', value: 100 }, { month: 'Nov', value: 70 }, { month: 'Dez', value: 110 },
+        ]
+    };
+
+    const [chargebackDisplayData, setChargebackDisplayData] = useState(chargebackDataSets['Últimos 6 Meses']);
+    const maxChargeback = Math.max(...chargebackDisplayData.map(d => d.value));
+    const totalChargeback = chargebackDisplayData.reduce((sum, item) => sum + item.value, 0);
+
+    const handleChargebackPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const period = e.target.value as keyof typeof chargebackDataSets;
+        if (chargebackDataSets[period]) {
+            setChargebackDisplayData(chargebackDataSets[period]);
+        }
+    };
+
+    const reembolsosData = [
+        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
+        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
+        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
+        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
+        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
+    ];
 
     return (
         <div className={styles.mainContainer}>
@@ -264,6 +298,9 @@ const VendasPainel = () => {
                 display: openSubMenus.includes("Configurações") ? "block" : "none",
                 }}
             >
+                <a href="/configuracoes">
+                    <div className={`${styles.subMenuItem}`}>Geral</div>
+                </a>
                 <a href="/clientes">
                 <div className={styles.subMenuItem}>Clientes</div>
                 </a>
@@ -374,82 +411,157 @@ const VendasPainel = () => {
             </div>
             </div>
             <div className={styles.dataSection}>
-            <div className={styles.chartSection}>
-                <div className={styles.sectionHeader}>
-                <h3 className={styles.sectionTitle}>Total de Vendas por Período</h3>
-                <div className={styles.sectionActions}>
-                    <select
-                    className={styles.periodSelect}
-                    onChange={handleChartPeriodChange}
-                    >
-                    <option>Últimos 6 Meses</option>
-                    <option>Último Ano</option>
-                    <option>Últimos 3 Meses</option>
-                    </select>
-                    <button className={`${styles.goButton} ${styles.goBtn1}`}>
-                    <FaArrowRightFromBracket />
-                    </button>
+                <div className={styles.chartSection}>
+                    <div className={styles.sectionHeader}>
+                        <h3 className={styles.sectionTitle}>Total de Vendas por Período</h3>
+                        <div className={styles.sectionActions}>
+                            <select
+                            className={styles.periodSelect}
+                            onChange={handleChartPeriodChange}
+                            >
+                            <option>Últimos 6 Meses</option>
+                            <option>Último Ano</option>
+                            <option>Últimos 3 Meses</option>
+                            </select>
+                            <button className={`${styles.goButton} ${styles.goBtn1}`}>
+                            <FaArrowRightFromBracket />
+                            </button>
+                        </div>
+                    </div>
+                    <div className={styles.chartContainer}>
+                    <canvas ref={canvasRef} />
+                    </div>
                 </div>
-                </div>
-                <div className={styles.chartContainer}>
-                <canvas ref={canvasRef} />
+                <div className={styles.tableSection}>
+                    <div className={styles.sectionHeader}>
+                        <h3 className={styles.sectionTitle}>Produtos Mais Vendidos</h3>
+                        <div className={styles.sectionActions}>
+                            <button className={styles.goButton}>
+                            <FaArrowRightFromBracket />
+                            </button>
+                        </div>
+                    </div>
+                    <div className={styles.tableContainer}>
+                    <table className={styles.dataTable}>
+                        <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Nome</th>
+                            <th>Número de Vendas / %</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td>01</td>
+                            <td>Designerflix Mensal V.2</td>
+                            <td>
+                            <span className={styles.salesCount}>495</span> /{" "}
+                            <span className={styles.salesPercentage}>45%</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>01</td>
+                            <td>Designerflix Mensal V.2</td>
+                            <td>
+                            <span className={styles.salesCount}>495</span> /{" "}
+                            <span className={styles.salesPercentage}>45%</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>01</td>
+                            <td>Designerflix Mensal V.2</td>
+                            <td>
+                            <span className={styles.salesCount}>495</span> /{" "}
+                            <span className={styles.salesPercentage}>45%</span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>01</td>
+                            <td>Designerflix Mensal V.2</td>
+                            <td>
+                            <span className={styles.salesCount}>495</span> /{" "}
+                            <span className={styles.salesPercentage}>45%</span>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                    </div>
                 </div>
             </div>
-            <div className={styles.tableSection}>
-                <div className={styles.sectionHeader}>
-                <h3 className={styles.sectionTitle}>Produtos Mais Vendidos</h3>
-                <div className={styles.sectionActions}>
-                    <button className={styles.goButton}>
-                    <FaArrowRightFromBracket />
-                    </button>
+            <div className={styles.dataSection}>
+                <div className={styles.chartSection}>
+                    <div className={styles.sectionHeader}>
+                        <h3 className={styles.sectionTitle}>ChargeBack</h3>
+                        <div className={styles.cardTotal}>
+                            <span className={styles.cardTotalLabel}>TOTAL </span><strong className={styles.cardTotalValue}>{totalChargeback}</strong>
+                        </div>
+                        <div className={styles.selectWrapper}>
+                            <select className={styles.periodSelect} onChange={handleChargebackPeriodChange}>
+                                <option value="Últimos 6 Meses">Últimos 6 meses</option>
+                                <option value="Últimos 3 Meses">Últimos 3 meses</option>
+                                <option value="Último Ano">Último ano</option>
+                            </select>
+                        </div>
+                        <div className={styles.sectionActions}>
+                            <button className={styles.goButton}>
+                            <FaArrowRightFromBracket />
+                            </button>
+                        </div>
+                    </div>
+                    <div className={styles.chargebackChart}>
+                        {chargebackDisplayData.map(item => (
+                            <div className={styles.chargebackItem} key={item.month}>
+                                <span className={styles.chargebackLabel}>{item.month}</span>
+                                <div className={styles.chargebackBarContainer}>
+                                    <div 
+                                        className={styles.chargebackBar}
+                                        style={{ width: `${(item.value / maxChargeback) * 100}%` }}
+                                    ></div>
+                                </div>
+                                <span className={styles.chargebackValue}>{item.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                     <div className={styles.chartLegend}>
+                        <div className={styles.legendItem}>
+                            <span className={`${styles.legendMarker}`} style={{ backgroundColor: '#007bff' }}></span>
+                            Total por mês
+                        </div>
+                    </div>
                 </div>
+                <div className={styles.tableSection}>
+                    <div className={styles.sectionHeader}>
+                        <h3 className={styles.sectionTitle}>Reembolsos Últimos 30 dias</h3>
+                        <div className={styles.cardTotal}>
+                            <span className={styles.cardTotalLabel}>TOTAL </span><strong className={styles.cardTotalValue}>50</strong>
+                        </div>
+                        <div className={styles.sectionActions}>
+                            <button className={styles.goButton}>
+                            <FaArrowRightFromBracket />
+                            </button>
+                        </div>
+                    </div>
+                    <div className={styles.listContainer}>
+                        <table className={styles.reembolsosTable}>
+                            <thead>
+                                <tr>
+                                    <th>Nº Pedido</th>
+                                    <th>Produto</th>
+                                    <th>Data Solicitação</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {reembolsosData.map((item, index) => (
+                                    <tr key={index}>
+                                        <td>{item.id}</td>
+                                        <td>{item.produto}</td>
+                                        <td>{item.data}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div className={styles.tableContainer}>
-                <table className={styles.dataTable}>
-                    <thead>
-                    <tr>
-                        <th>#</th>
-                        <th>Nome</th>
-                        <th>Número de Vendas / %</th>
-                    </tr>
-                    </thead>
-                    <tbody>
-                    <tr>
-                        <td>01</td>
-                        <td>Designerflix Mensal V.2</td>
-                        <td>
-                        <span className={styles.salesCount}>495</span> /{" "}
-                        <span className={styles.salesPercentage}>45%</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>01</td>
-                        <td>Designerflix Mensal V.2</td>
-                        <td>
-                        <span className={styles.salesCount}>495</span> /{" "}
-                        <span className={styles.salesPercentage}>45%</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>01</td>
-                        <td>Designerflix Mensal V.2</td>
-                        <td>
-                        <span className={styles.salesCount}>495</span> /{" "}
-                        <span className={styles.salesPercentage}>45%</span>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td>01</td>
-                        <td>Designerflix Mensal V.2</td>
-                        <td>
-                        <span className={styles.salesCount}>495</span> /{" "}
-                        <span className={styles.salesPercentage}>45%</span>
-                        </td>
-                    </tr>
-                    </tbody>
-                </table>
-                </div>
-            </div>
             </div>
         </main>
         </div>

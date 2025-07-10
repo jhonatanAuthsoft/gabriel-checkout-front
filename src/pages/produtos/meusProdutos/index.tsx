@@ -26,14 +26,34 @@ const MeusProdutos = () => {
     const [openSubMenus, setOpenSubMenus] = useState(['Produtos']);
     const [orderBy, setOrderBy] = useState('Novos');
     const [searchTerm, setSearchTerm] = useState('');
-    const [productsPage, setProductsPage] = useState<Page<Product>>({ content: [], totalPages: 0, number: 0 });
+    const [allProducts, setAllProducts] = useState<Product[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [showInactive, setShowInactive] = useState(false);
+    const [recentlyChangedId, setRecentlyChangedId] = useState<number | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
 
     const navigate = useNavigate();
     const overlayRef = useRef<HTMLDivElement>(null);
 
-    const fetchProducts = async (page = 0, size = 10, name = '') => {
+    const productsPerPage = 10;
+
+    const productsToDisplay = allProducts
+        .filter(p => showInactive || p.status === 'ATIVO' || p.id === recentlyChangedId)
+        .sort((a, b) => {
+            if (a.status === b.status) {
+                return b.id - a.id;
+            }
+            return a.status === 'ATIVO' ? -1 : 1;
+        });
+
+    const totalPages = Math.ceil(productsToDisplay.length / productsPerPage);
+    const paginatedProducts = productsToDisplay.slice(
+        (currentPage - 1) * productsPerPage,
+        currentPage * productsPerPage
+    );
+
+    const fetchProducts = async (name = '') => {
+        setRecentlyChangedId(null);
         setError(null);
         const apiUrl = import.meta.env.VITE_API_URL;
         const apiToken = localStorage.getItem('authToken');
@@ -44,19 +64,29 @@ const MeusProdutos = () => {
         }
 
         try {
-            const response = await fetch(`${apiUrl}produto/listar-todos?page=${page}&size=${size}&nome_busca=${name}`, {
-                headers: {
-                    'Authorization': `Bearer ${apiToken}`,
-                },
-            });
+            const fetchedProducts = [];
+            let currentPage = 0;
+            let totalPages = 1;
 
-            if (!response.ok) {
-                throw new Error('Falha ao buscar produtos.');
+            while (currentPage < totalPages) {
+                const params = new URLSearchParams({
+                    nome_busca: name,
+                    page: currentPage.toString(),
+                    size: '100',
+                });
+                const response = await fetch(`${apiUrl}produto/listar-todos?${params.toString()}`, {
+                    headers: { 'Authorization': `Bearer ${apiToken}` },
+                });
+
+                if (!response.ok) throw new Error('Falha ao buscar produtos.');
+
+                const data: Page<Product> = await response.json();
+                fetchedProducts.push(...data.content);
+                totalPages = data.totalPages;
+                currentPage++;
             }
-
-            const data: Page<Product> = await response.json();
-            console.log('API Response - Products:', data.content);
-            setProductsPage(data);
+            setAllProducts(fetchedProducts);
+            setCurrentPage(1);
         } catch (err: any) {
             setError(err.message);
             console.error(err);
@@ -64,8 +94,12 @@ const MeusProdutos = () => {
     };
 
     useEffect(() => {
-        fetchProducts(0, 10, searchTerm);
+        fetchProducts(searchTerm);
     }, [searchTerm]);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [showInactive]);
 
     const handleStatusChange = async (productId: number, newStatus: string) => {
         setError(null);
@@ -83,14 +117,12 @@ const MeusProdutos = () => {
             });
 
             if (response.ok) {
-                setProductsPage(prevPage => ({
-                    ...prevPage,
-                    content: prevPage.content.map(product =>
-                        product.id === productId
-                            ? { ...product, status: newStatus }
-                            : product
-                    ),
-                }));
+                setAllProducts(prevProducts =>
+                    prevProducts.map(p =>
+                        p.id === productId ? { ...p, status: newStatus } : p
+                    )
+                );
+                setRecentlyChangedId(productId);
             } else {
                 const errorData = await response.json().catch(() => ({}));
                 setError(errorData.message || 'Não foi possível alterar o status do produto.');
@@ -132,7 +164,7 @@ const MeusProdutos = () => {
     }, [isSidebarActive]);
 
     const handleSearch = () => {
-        fetchProducts(0, 10, searchTerm);
+        fetchProducts(searchTerm);
     };
 
     const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -145,6 +177,12 @@ const MeusProdutos = () => {
       const selectedOption = e.target.options[e.target.selectedIndex];
       setOrderBy(selectedOption.text);
     }
+
+    const handlePageChange = (newPage: number) => {
+        if (newPage > 0 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     return (
         <div className={styles.mainContainer}>
@@ -197,6 +235,9 @@ const MeusProdutos = () => {
                         <FaChevronDown className={`${styles.expandIcon} ${openSubMenus.includes('Configurações') ? styles.rotate : ''}`} />
                     </div>
                     <div className={styles.subMenu} style={{ display: openSubMenus.includes('Configurações') ? 'block' : 'none' }}>
+                        <a href="/configuracoes">
+                            <div className={`${styles.subMenuItem}`}>Geral</div>
+                        </a>
                         <a href="/clientes">
                             <div className={styles.subMenuItem}>Clientes</div>
                         </a>
@@ -269,9 +310,7 @@ const MeusProdutos = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {productsPage.content
-                                    .filter(p => showInactive || p.status?.toUpperCase() === 'ATIVO')
-                                    .map(product => (
+                                {paginatedProducts.map(product => (
                                     <tr key={product.id}>
                                         <td className={styles.productImageCell}>
                                             <div className={styles.productImage}>
@@ -287,8 +326,8 @@ const MeusProdutos = () => {
                                             <label className={styles.switch}>
                                                 <input
                                                     type="checkbox"
-                                                    checked={product.status?.toUpperCase() === 'ATIVO'}
-                                                    onChange={() => handleStatusChange(product.id, product.status?.toUpperCase() === 'ATIVO' ? 'INATIVO' : 'ATIVO')}
+                                                    checked={product.status === 'ATIVO'}
+                                                    onChange={() => handleStatusChange(product.id, product.status === 'ATIVO' ? 'INATIVO' : 'ATIVO')}
                                                 />
                                                 <span className={`${styles.slider} ${styles.round}`}></span>
                                             </label>
@@ -307,17 +346,17 @@ const MeusProdutos = () => {
                     </div>
                 </div>
                 <div className={styles.paginationContainer}>
-                    <div className={styles.paginationInfo}>Exibindo página {productsPage.number + 1} de {productsPage.totalPages}</div>
+                    <div className={styles.paginationInfo}>Exibindo página {currentPage} de {totalPages}</div>
                     <div className={styles.paginationControls}>
-                        <button className={`${styles.paginationBtn} ${styles.paginationPrev}`} onClick={() => fetchProducts(productsPage.number - 1)} disabled={productsPage.number === 0}>
+                        <button className={`${styles.paginationBtn} ${styles.paginationPrev}`} onClick={() => handlePageChange(currentPage - 1)} disabled={currentPage === 1}>
                             <FaChevronLeft />
                         </button>
-                        {[...Array(productsPage.totalPages).keys()].map(pageNumber => (
-                             <button key={pageNumber} className={`${styles.paginationBtn} ${styles.paginationNumber} ${productsPage.number === pageNumber ? styles.active : ''}`} onClick={() => fetchProducts(pageNumber)}>
-                                {pageNumber + 1}
+                        {[...Array(totalPages).keys()].map(p => (
+                             <button key={p} className={`${styles.paginationBtn} ${styles.paginationNumber} ${currentPage === p + 1 ? styles.active : ''}`} onClick={() => handlePageChange(p + 1)}>
+                                {p + 1}
                             </button>
                         ))}
-                        <button className={`${styles.paginationBtn} ${styles.paginationNext}`} onClick={() => fetchProducts(productsPage.number + 1)} disabled={productsPage.number >= productsPage.totalPages - 1}>
+                        <button className={`${styles.paginationBtn} ${styles.paginationNext}`} onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage >= totalPages}>
                             <FaChevronRight />
                         </button>
                     </div>

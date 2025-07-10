@@ -4,19 +4,83 @@ import { FaShoppingBag, FaBox, FaCog, FaChevronDown, FaBars, FaSearch, FaSort, F
 import { FaArrowRightFromBracket, FaTrashCan } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 
+interface Usuario {
+    id: number;
+    nome: string;
+    email: string;
+    ativo: boolean;
+    permissao: string;
+    cpf: string;
+    celular: string;
+    endereco: {
+        endereco: string;
+        numeroResidencia: string;
+        complementoEndereco: string;
+        bairro: string;
+        cidade: string;
+        uf: string;
+        cep: string;
+    };
+}
+
+const initialUserState = {
+    nome: '',
+    email: '',
+    senha: '',
+    permissao: 'FUNCIONARIO',
+    cpf: '',
+    celular: '',
+    endereco: {
+        endereco: '',
+        numeroResidencia: '',
+        complementoEndereco: '',
+        bairro: '',
+        cidade: '',
+        uf: '',
+        cep: '',
+    },
+};
+
 const Usuarios: React.FC = () => {
     const [isSidebarActive, setSidebarActive] = useState(false);
-    const [openSubMenus, setOpenSubMenus] = useState(['Configurações']);
+    const [openSubMenus, setOpenSubMenus] = useState<string[]>(['Configurações']);
     const [view, setView] = useState('table');
     const overlayRef = useRef<HTMLDivElement>(null);
+    const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
+    const [newUser, setNewUser] = useState(initialUserState);
 
-    const initialUsers = Array(7).fill({}).map((_, i) => ({
-        id: i + 1,
-        name: 'Nome Usuário',
-        email: 'email@email.com',
-        active: false,
-    }));
-    const [users, setUsers] = useState(initialUsers);
+    useEffect(() => {
+        const fetchUsuarios = async () => {
+            const token = localStorage.getItem('authToken');
+            const apiUrl = import.meta.env.VITE_API_URL;
+            if (!token || !apiUrl) {
+                console.error("Token ou URL da API não encontrados.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}usuario/listar-todos/usuarios?page=${page}&size=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Falha ao buscar usuários.');
+                }
+                const data = await response.json();
+                setUsuarios(data.content || []);
+                setTotalPages(data.totalPages || 0);
+            } catch (error) {
+                console.error("Erro ao buscar usuários:", error);
+            }
+        };
+
+        if (view === 'table') {
+            fetchUsuarios();
+        }
+    }, [view, page]);
 
     useEffect(() => {
         const overlay = overlayRef.current;
@@ -46,12 +110,100 @@ const Usuarios: React.FC = () => {
         );
     };
 
+    const handleNewUserInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        if (name.startsWith('endereco.')) {
+            const field = name.split('.')[1];
+            setNewUser(prev => ({
+                ...prev,
+                endereco: {
+                    ...prev.endereco,
+                    [field]: value,
+                },
+            }));
+        } else {
+            setNewUser(prev => ({ ...prev, [name]: value }));
+        }
+    };
+
+    const handleSaveNewUser = async () => {
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token || !apiUrl) {
+            alert('Erro de configuração. Tente novamente mais tarde.');
+            return;
+        }
+
+        const { nome, email, senha, permissao, cpf, celular, endereco } = newUser;
+
+        if (!nome || !email || !senha) {
+            alert('Nome, e-mail e senha são obrigatórios.');
+            return;
+        }
+
+        const payload: any = { nome, email, senha, permissao };
+
+        if (cpf) payload.cpf = cpf;
+        if (celular) payload.celular = celular;
+
+        const hasAddressInfo = Object.values(endereco).some(field => field.trim() !== '');
+        if (hasAddressInfo) {
+            payload.endereco = endereco;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}usuario/cadastrar`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (response.ok) {
+                alert('Usuário criado com sucesso!');
+                setNewUser(initialUserState);
+                setView('table');
+            } else {
+                const errorData = await response.json();
+                alert(`Falha ao criar usuário: ${errorData.message || 'Erro desconhecido'}`);
+            }
+        } catch (error) {
+            console.error('Erro ao criar usuário:', error);
+            alert('Erro ao conectar com o servidor.');
+        }
+    };
+
     const handleToggleActive = (id: number) => {
-        setUsers(prevUsers =>
+        setUsuarios(prevUsers =>
             prevUsers.map(user =>
-                user.id === id ? { ...user, active: !user.active } : user
+                user.id === id ? { ...user, ativo: !user.ativo } : user
             )
         );
+    };
+
+    const renderPaginationButtons = () => {
+        const pageNumbers = [];
+        const pagesToShow = 3; 
+        let startPage = Math.max(0, page - 1);
+        let endPage = Math.min(totalPages - 1, page + 1);
+
+        if (page === 0) {
+            endPage = Math.min(totalPages - 1, pagesToShow - 1);
+        }
+        if (page === totalPages - 1) {
+            startPage = Math.max(0, totalPages - pagesToShow);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(
+                <button key={i} onClick={() => setPage(i)} className={`${styles.paginationBtn} ${styles.paginationNumber} ${page === i ? styles.active : ''}`}>
+                    {i + 1}
+                </button>
+            );
+        }
+        return pageNumbers;
     };
 
     return (
@@ -103,6 +255,9 @@ const Usuarios: React.FC = () => {
                         <FaChevronDown className={`${styles.expandIcon} ${openSubMenus.includes('Configurações') ? styles.rotate : ''}`} />
                     </div>
                     <div className={styles.subMenu} style={{ display: openSubMenus.includes('Configurações') ? 'block' : 'none' }}>
+                        <a href="/configuracoes">
+                            <div className={`${styles.subMenuItem}`}>Geral</div>
+                        </a>
                         <a href="/clientes">
                             <div className={styles.subMenuItem}>Clientes</div>
                         </a>
@@ -143,22 +298,24 @@ const Usuarios: React.FC = () => {
                                             <th className={styles.sortable}>
                                                 e-mail <FaSort />
                                             </th>
+                                            <th className={styles.sortable}>Perfil</th>
                                             <th className={styles.sortable}>Ativo</th>
                                             <th className={styles.sortable}>Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {users.map((user) => (
+                                        {usuarios.map((user) => (
                                             <tr key={user.id}>
-                                                <td>{user.name}</td>
+                                                <td>{user.nome}</td>
                                                 <td className={styles.urlText}>{user.email}</td>
+                                                <td>{user.permissao}</td>
                                                 <td style={{ width: 51 }}>
                                                     <div className={styles.switchContainer}>
                                                         <input
                                                             type="checkbox"
                                                             className={styles.slideCheckbox}
                                                             id={`cupomAtivo${user.id}`}
-                                                            checked={user.active}
+                                                            checked={user.ativo}
                                                             onChange={() => handleToggleActive(user.id)}
                                                         />
                                                         <label className={styles.slideSwitch} htmlFor={`cupomAtivo${user.id}`}>
@@ -183,18 +340,25 @@ const Usuarios: React.FC = () => {
                             </div>
                         </div>
                         <div className={styles.paginationContainer}>
-                            <div className={styles.paginationInfo}>Exibindo página 1 de 20</div>
+                            <div className={styles.paginationInfo}>Exibindo página {page + 1} de {totalPages}</div>
                             <div className={styles.paginationControls}>
-                                <button className={`${styles.paginationBtn} ${styles.paginationPrev}`}>
+                                <button className={`${styles.paginationBtn} ${styles.paginationPrev}`} onClick={() => setPage(p => p - 1)} disabled={page === 0}>
                                     <FaChevronLeft />
                                 </button>
-                                <button className={`${styles.paginationBtn} ${styles.paginationNumber} ${styles.active}`}>1</button>
-                                <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>2</button>
-                                <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>3</button>
-                                <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>4</button>
+                                {page > 1 && (
+                                    <>
+                                        <button onClick={() => setPage(0)} className={`${styles.paginationBtn} ${styles.paginationNumber}`}>1</button>
+                                        <span className={styles.paginationEllipsis}>...</span>
+                                    </>
+                                )}
+                                {renderPaginationButtons()}
+                                {page < totalPages - 2 && (
+                                    <>
                                 <span className={styles.paginationEllipsis}>...</span>
-                                <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>20</button>
-                                <button className={`${styles.paginationBtn} ${styles.paginationNext}`}>
+                                        <button onClick={() => setPage(totalPages - 1)} className={`${styles.paginationBtn} ${styles.paginationNumber}`}>{totalPages}</button>
+                                    </>
+                                )}
+                                <button className={`${styles.paginationBtn} ${styles.paginationNext}`} onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
                                     <FaChevronRight />
                                 </button>
                             </div>
@@ -211,18 +375,100 @@ const Usuarios: React.FC = () => {
                                 <div className={styles.dataSection}>
                                     <div className={styles.dataCol6}>
                                         <div className={styles.inputGroup}>
-                                            <label className={styles.label} htmlFor="nomeUsuario">
+                                            <label className={styles.label} htmlFor="nome">
                                                 Nome do Usuário
                                             </label>
-                                            <input type="text" name="nomeUsuario" className={styles.input} />
+                                            <input type="text" name="nome" className={styles.input} value={newUser.nome} onChange={handleNewUserInputChange} />
                                         </div>
                                     </div>
                                     <div className={styles.dataCol6}>
                                         <div className={styles.inputGroup}>
-                                            <label className={styles.label} htmlFor="emailUsuario">
+                                            <label className={styles.label} htmlFor="email">
                                                 E-mail
                                             </label>
-                                            <input type="text" name="emailUsuario" className={styles.input} />
+                                            <input type="email" name="email" className={styles.input} value={newUser.email} onChange={handleNewUserInputChange} />
+                                        </div>
+                                    </div>
+                                    <div className={styles.dataCol6}>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="senha">
+                                                Senha
+                                            </label>
+                                            <input type="password" name="senha" className={styles.input} value={newUser.senha} onChange={handleNewUserInputChange} />
+                                        </div>
+                                    </div>
+                                    <div className={styles.dataCol6}>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="permissao">
+                                                Perfil
+                                            </label>
+                                            <div className={styles.selectWrapper}>
+                                                <select name="permissao" className={styles.filterSelect} value={newUser.permissao} onChange={handleNewUserInputChange}>
+                                                    <option value="FUNCIONARIO">Funcionário</option>
+                                                    <option value="ADMIN">Administrador</option>
+                                                </select>
+                                                <FaChevronDown className={styles.selectIcon} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div className={styles.dataCol6}>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="cpf">CPF (Opcional)</label>
+                                            <input type="text" name="cpf" className={styles.input} value={newUser.cpf} onChange={handleNewUserInputChange} />
+                                        </div>
+                                    </div>
+                                    <div className={styles.dataCol6}>
+                                        <div className={styles.inputGroup}>
+                                            <label className={styles.label} htmlFor="celular">Celular (Opcional)</label>
+                                            <input type="text" name="celular" className={styles.input} value={newUser.celular} onChange={handleNewUserInputChange} />
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div className={styles.addressSection}>
+                                    <h4 className={styles.addressTitle}>Endereço (Opcional)</h4>
+                                    <div className={styles.dataSection}>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.cep">CEP</label>
+                                                <input type="text" name="endereco.cep" className={styles.input} value={newUser.endereco.cep} onChange={handleNewUserInputChange} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.endereco">Endereço</label>
+                                                <input type="text" name="endereco.endereco" className={styles.input} value={newUser.endereco.endereco} onChange={handleNewUserInputChange} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.numeroResidencia">Número</label>
+                                                <input type="text" name="endereco.numeroResidencia" className={styles.input} value={newUser.endereco.numeroResidencia} onChange={handleNewUserInputChange} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.complementoEndereco">Complemento</label>
+                                                <input type="text" name="endereco.complementoEndereco" className={styles.input} value={newUser.endereco.complementoEndereco} onChange={handleNewUserInputChange} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.bairro">Bairro</label>
+                                                <input type="text" name="endereco.bairro" className={styles.input} value={newUser.endereco.bairro} onChange={handleNewUserInputChange} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.cidade">Cidade</label>
+                                                <input type="text" name="endereco.cidade" className={styles.input} value={newUser.endereco.cidade} onChange={handleNewUserInputChange} />
+                                            </div>
+                                        </div>
+                                        <div className={styles.dataCol6}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="endereco.uf">UF</label>
+                                                <input type="text" name="endereco.uf" className={styles.input} value={newUser.endereco.uf} onChange={handleNewUserInputChange} />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -240,6 +486,7 @@ const Usuarios: React.FC = () => {
                                 <button
                                     id="btnSalvarUsuario"
                                     className={`${styles.paginationBtnInside} ${styles.btnSalvarUsuario}`}
+                                    onClick={handleSaveNewUser}
                                 >
                                     Salvar
                                 </button>

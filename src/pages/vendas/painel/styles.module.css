@@ -374,6 +374,18 @@
     font-weight: bold;
     color: #212529;
     font-family: 'Poppins Bold', sans-serif;
+    color: #05004E;
+}
+
+.cardTotal {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cardTotalValue {
+    font-size: 32px;
+    font-family: 'Poppins Bold', sans-serif;
 }
 
 .sectionActions {
@@ -448,10 +460,7 @@
     font-weight: 400;
     color: #96A5B8;
     font-size: 14px;
-    position: sticky;
-    top: 0;
     background-color: white;
-    z-index: 1;
     border-bottom: 1px solid #e9ecef;
     padding-bottom: 20px;
 }
@@ -683,10 +692,6 @@ tr {
         padding: 0px 30px;
     }
     
-    .sectionTitle {
-        font-size: 16px;
-    }
-    
     .sectionActions {
         flex-direction: column;
         align-items: stretch;
@@ -759,4 +764,117 @@ tr {
         padding-top: 12px;
         padding-bottom: 12px;
     }
+}
+
+.reembolsosTable th:first-child,
+.reembolsosTable td:first-child {
+    text-align: left;
+    padding-left: 1.5rem;
+}
+
+.reembolsosTable th:last-child,
+.reembolsosTable td:last-child {
+    text-align: right;
+    padding-right: 1.5rem;
+}
+
+.chargebackChart {
+    padding: 1rem 1.5rem;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+.chargebackItem {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.chargebackLabel {
+    width: 80px;
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: right;
+    margin-right: 1rem;
+}
+
+.chargebackBarContainer {
+    width: 75%;
+    background-color: #e9ecef;
+    border-radius: 4px;
+    height: 15px;
+}
+
+.chargebackBar {
+    background-color: #007bff;
+    height: 100%;
+    border-radius: 4px;
+}
+
+.chargebackValue {
+    width: 40px;
+    font-size: 0.8rem;
+    color: #6c757d;
+    text-align: right;
+    margin-left: 1rem;
+}
+
+.reembolsosTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.reembolsosTable th,
+.reembolsosTable td {
+    padding: 0.75rem;
+    text-align: left;
+    font-size: 0.85rem;
+    color: #495057;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.reembolsosTable th {
+    font-weight: 600;
+    color: #343a40;
+}
+
+.chartLegend {
+    display: flex;
+    justify-content: flex-start;
+    padding: 1rem 1.5rem;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+
+.legendMarker {
+    width: 12px;
+    height: 12px;
+    border-radius: 2px;
+    margin-right: 8px;
+    display: inline-block;
+}
+
+.cardTotal {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.cardTotalLabel {
+    font-size: 1rem;
+    color: #212529;
+    font-weight: 500;
+}
+
+.cardTotalValue {
+    font-size: 1.5rem;
+    color: #212529;
+    font-weight: 700;
 }

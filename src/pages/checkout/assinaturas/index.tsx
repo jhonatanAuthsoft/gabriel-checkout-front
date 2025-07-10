@@ -1,9 +1,44 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
 import { FaBars, FaShoppingBag, FaCog, FaSearch, FaChevronDown, FaEllipsisV } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaSquareWhatsapp } from 'react-icons/fa6';
+import { jwtDecode } from 'jwt-decode';
 import logo from '../../../assets/img/df.png';
 import productImg from '../../../assets/img/dfCirculo.png';
+
+interface Assinatura {
+    id: string;
+    venda: {
+        id: number;
+        produto: {
+            dadosProduto: {
+                dadosGerais: {
+                    nome: string;
+                }
+            }
+        }
+    };
+    plano: {
+        nome: string;
+        valor: number;
+    };
+    dataInicio: string;
+    dataFim: string;
+    statusAssinatura: 'ATIVA' | 'CANCELADA' | 'INADIMPLENTE';
+    metodoPagamento: string;
+    cliente: {
+        id: string;
+        cpf: string;
+        email: string;
+    };
+}
+
+interface DecodedToken {
+    sub: string;
+    iat: number;
+    exp: number;
+}
 
 const Assinaturas: React.FC = () => {
     const [isSidebarActive, setIsSidebarActive] = useState(false);
@@ -11,6 +46,76 @@ const Assinaturas: React.FC = () => {
     const [showChangePaymentPanel, setShowChangePaymentPanel] = useState(false);
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cartao');
     const menuRef = useRef<HTMLDivElement>(null);
+    const [assinaturas, setAssinaturas] = useState<Assinatura[]>([]);
+    const navigate = useNavigate();
+
+    const fetchAssinaturas = async () => {
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token) {
+            console.error("Token de autenticação não encontrado.");
+            return;
+        }
+
+        try {
+            const decodedToken = jwtDecode<DecodedToken>(token);
+            const userEmail = decodedToken.sub;
+
+            const response = await fetch(`${apiUrl}assinatura/listar-todos`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.status === 401 || response.status === 403) {
+                navigate('/vendas');
+                return;
+            }
+            if (!response.ok) throw new Error('Falha ao buscar assinaturas');
+            const data = await response.json();
+            
+            const userAssinaturas = data.content.filter(
+                (assinatura: Assinatura) => assinatura.cliente.email === userEmail
+            );
+            
+            setAssinaturas(userAssinaturas || []);
+        } catch (error) {
+            console.error("Erro ao buscar assinaturas:", error);
+        }
+    };
+    
+    useEffect(() => {
+        fetchAssinaturas();
+    }, []);
+
+    const handleCancelSubscription = async (idAssinatura: string) => {
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token) return;
+
+        if (!confirm('Tem certeza de que deseja cancelar esta assinatura?')) return;
+        
+        try {
+            const response = await fetch(`${apiUrl}assinatura/atualizar/${idAssinatura}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ statusAssinatura: 'CANCELADA' })
+            });
+
+            if (response.ok) {
+                alert('Assinatura cancelada com sucesso!');
+                fetchAssinaturas();
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Falha ao cancelar assinatura');
+            }
+        } catch (error) {
+            alert(error);
+            console.error("Erro ao cancelar assinatura:", error);
+        } finally {
+            setOpenMenuId(null);
+        }
+    };
 
     const toggleSidebar = () => {
         setIsSidebarActive(!isSidebarActive);
@@ -41,12 +146,21 @@ const Assinaturas: React.FC = () => {
     }, [openMenuId]);
 
     useEffect(() => {
-        if (isSidebarActive) {
-            document.body.classList.add('no-scroll');
-        } else {
-            document.body.classList.remove('no-scroll');
-        }
+        document.body.classList.toggle('no-scroll', isSidebarActive);
     }, [isSidebarActive]);
+
+    const formatarData = (data: string) => {
+        return new Date(data).toLocaleDateString('pt-BR');
+    };
+
+    const formatarStatus = (status: string) => {
+        switch (status) {
+            case 'ATIVA': return 'Ativa';
+            case 'CANCELADA': return 'Cancelada';
+            case 'INADIMPLENTE': return 'Inadimplente';
+            default: return status;
+        }
+    };
 
     const renderChangePaymentPanel = () => (
         <div className={styles.contentSection}>
@@ -207,41 +321,41 @@ const Assinaturas: React.FC = () => {
                                     <thead>
                                         <tr>
                                             <th className={styles.productImageHeader}></th>
-                                            <th className={styles.sortable}>Produto(s)</th>
-                                            <th className={styles.sortable}>N ° Pedido</th>
-                                            <th className={styles.sortable}>Data</th>
-                                            <th className={styles.sortable}>Valor</th>
-                                            <th className={styles.sortable}>Forma Pagamento</th>
-                                            <th className={`${styles.sortable} ${styles['text-center']}`}>Status</th>
+                                            <th>Produto(s)</th>
+                                            <th>N ° Pedido</th>
+                                            <th>Data</th>
+                                            <th>Valor</th>
+                                            <th>Forma Pagamento</th>
+                                            <th className={styles['text-center']}>Status</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {[
-                                            { id: 'actions1', status: 'processando' },
-                                            { id: 'actions2', status: 'concluido' }
-                                        ].map(order => (
-                                            <tr key={order.id}>
+                                        {assinaturas.map(assinatura => (
+                                            <tr key={assinatura.id}>
                                                 <td className={styles.productImageCell}>
                                                     <div className={styles.productImage}>
-                                                        <img src={productImg} alt="Produto 1" />
+                                                        <img src={productImg} alt="Produto" />
                                                     </div>
                                                 </td>
-                                                <td>Produto 1</td>
-                                                <td>99999999</td>
-                                                <td>dd/mm/aaaa</td>
-                                                <td>R$ 000,00</td>
-                                                <td>Cartão de Crédito</td>
+                                                <td>{assinatura.venda?.produto?.dadosProduto?.dadosGerais?.nome || 'Produto Indisponível'} - {assinatura.plano?.nome || 'Plano Indisponível'}</td>
+                                                <td>#{assinatura.venda?.id}</td>
+                                                <td>{formatarData(assinatura.dataInicio)}</td>
+                                                <td>R$ {assinatura.plano?.valor?.toFixed(2).replace('.', ',') || '0,00'}</td>
+                                                <td>{assinatura.metodoPagamento || 'N/A'}</td>
                                                 <td className={styles['text-center']}>
                                                     <div className={styles.statusItens}>
-                                                        <span className={`${styles.statusProduto} ${styles[order.status]}`}>{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
-                                                        <div className={styles.actionsContainer} ref={openMenuId === order.id ? menuRef : null}>
-                                                            <FaEllipsisV id={order.id} className={styles.actionsBtn} onClick={(e) => toggleActionsMenu(order.id, e)} />
+                                                        <span className={`${styles.statusProduto} ${styles[assinatura.statusAssinatura]}`}>{formatarStatus(assinatura.statusAssinatura)}</span>
+                                                        <div className={styles.actionsContainer} ref={openMenuId === assinatura.id ? menuRef : null}>
+                                                            <FaEllipsisV id={assinatura.id} className={styles.actionsBtn} onClick={(e) => toggleActionsMenu(assinatura.id, e)} />
                                                             <FaSquareWhatsapp className={`${styles.actionsBtn} ${styles.whatsappBtn}`} />
-                                                            <div className={`${styles.actionsMenu} ${openMenuId === order.id ? styles.show : ''}`} data-menu-for={order.id}>
-                                                                <a href="#">Solicitar o reembolso</a>
-                                                                <a href="#">Cancelamento da assinatura</a>
-                                                                <a href="#" onClick={handleChangePaymentClick}>Alterar forma de pagamento</a>
-                                                            </div>
+                                                            {openMenuId === assinatura.id && (
+                                                                <div className={`${styles.actionsMenu} ${styles.show}`} data-menu-for={assinatura.id}>
+                                                                    {assinatura.statusAssinatura === 'ATIVA' &&
+                                                                        <a href="#" onClick={() => handleCancelSubscription(assinatura.id)}>Cancelar assinatura</a>
+                                                                    }
+                                                                    <a href="#" onClick={handleChangePaymentClick}>Alterar forma de pagamento</a>
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 </td>
@@ -258,4 +372,4 @@ const Assinaturas: React.FC = () => {
     );
 };
 
-export default Assinaturas; 
+export default Assinaturas;

@@ -4,20 +4,49 @@ import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaSearch, FaSort, F
 import { FaArrowRightFromBracket, FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 
-const Clientes = () => {
+interface Cliente {
+    id: number;
+    nome: string;
+    email: string;
+    dataCriacao: string;
+}
+
+const Clientes: React.FC = () => {
     const [isSidebarActive, setSidebarActive] = useState(false);
-    const [openSubMenus, setOpenSubMenus] = useState(['Configurações']);
+    const [openSubMenus, setOpenSubMenus] = useState<string[]>(['Configurações']);
     const overlayRef = useRef<HTMLDivElement>(null);
+    const [clientes, setClientes] = useState<Cliente[]>([]);
+    const [page, setPage] = useState(0);
+    const [totalPages, setTotalPages] = useState(0);
 
-    const initialClients = Array(7).fill({}).map((_, i) => ({
-        id: i + 1,
-        name: 'Nome Cliente',
-        email: 'email@email.com',
-        date: 'dd/mm/aaaa',
-        active: false,
-    }));
+    useEffect(() => {
+        const fetchClientes = async () => {
+            const token = localStorage.getItem('authToken');
+            const apiUrl = import.meta.env.VITE_API_URL;
+            if (!token || !apiUrl) {
+                console.error("Token ou URL da API não encontrados.");
+                return;
+            }
 
-    const [clients, setClients] = useState(initialClients);
+            try {
+                const response = await fetch(`${apiUrl}usuario/listar-todos/clientes?page=${page}&size=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                if (!response.ok) {
+                    throw new Error('Falha ao buscar clientes.');
+                }
+                const data = await response.json();
+                setClientes(data.content || []);
+                setTotalPages(data.totalPages || 0);
+            } catch (error) {
+                console.error("Erro ao buscar clientes:", error);
+            }
+        };
+
+        fetchClientes();
+    }, [page]);
 
     const toggleMobileMenu = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -47,12 +76,27 @@ const Clientes = () => {
         }
     }, [isSidebarActive]);
     
-    const handleToggleActive = (id: number) => {
-        setClients(prevClients =>
-            prevClients.map(client =>
-                client.id === id ? { ...client, active: !client.active } : client
-            )
-        );
+    const renderPaginationButtons = () => {
+        const pageNumbers = [];
+        const pagesToShow = 3; 
+        let startPage = Math.max(0, page - 1);
+        let endPage = Math.min(totalPages - 1, page + 1);
+
+        if (page === 0) {
+            endPage = Math.min(totalPages - 1, pagesToShow - 1);
+        }
+        if (page === totalPages - 1) {
+            startPage = Math.max(0, totalPages - pagesToShow);
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            pageNumbers.push(
+                <button key={i} onClick={() => setPage(i)} className={`${styles.paginationBtn} ${styles.paginationNumber} ${page === i ? styles.active : ''}`}>
+                    {i + 1}
+                </button>
+            );
+        }
+        return pageNumbers;
     };
 
     return (
@@ -104,6 +148,9 @@ const Clientes = () => {
                         <FaChevronDown className={`${styles.expandIcon} ${openSubMenus.includes('Configurações') ? styles.rotate : ''}`} />
                     </div>
                     <div className={styles.subMenu} style={{ display: openSubMenus.includes('Configurações') ? 'block' : 'none' }}>
+                        <a href="/configuracoes">
+                            <div className={`${styles.subMenuItem}`}>Geral</div>
+                        </a>
                         <a href="#">
                             <div className={`${styles.subMenuItem} ${styles.active}`}>Clientes</div>
                         </a>
@@ -140,35 +187,14 @@ const Clientes = () => {
                                     <th className={styles.sortable}>Nome do Cliente <FaSort /></th>
                                     <th className={styles.sortable}>e-mail <FaSort /></th>
                                     <th className={styles.sortable}>Data Cadastro <FaSort /></th>
-                                    <th className={styles.sortable}>Ativo</th>
-                                    <th className={styles.sortable}>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {clients.map((client) => (
+                                {clientes.map((client) => (
                                     <tr key={client.id}>
-                                        <td>{client.name}</td>
+                                        <td>{client.nome}</td>
                                         <td className={styles.urlText}>{client.email}</td>
-                                        <td>{client.date}</td>
-                                        <td style={{ width: 51 }}>
-                                            <div className={styles.switchContainer}>
-                                                <input
-                                                    type="checkbox"
-                                                    className={styles.slideCheckbox}
-                                                    id={`client-active-${client.id}`}
-                                                    checked={client.active}
-                                                    onChange={() => handleToggleActive(client.id)}
-                                                />
-                                                <label className={styles.slideSwitch} htmlFor={`client-active-${client.id}`}>
-                                                    <span className={styles.sliderSwitch} />
-                                                </label>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <button className={styles.btnAction}>
-                                                <FaArrowUpRightFromSquare />
-                                            </button>
-                                        </td>
+                                        <td>{client.dataCriacao ? new Date(client.dataCriacao).toLocaleDateString('pt-BR') : ''}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -176,18 +202,25 @@ const Clientes = () => {
                     </div>
                 </div>
                 <div className={styles.paginationContainer}>
-                    <div className={styles.paginationInfo}>Exibindo página 1 de 20</div>
+                    <div className={styles.paginationInfo}>Exibindo página {page + 1} de {totalPages}</div>
                     <div className={styles.paginationControls}>
-                        <button className={`${styles.paginationBtn} ${styles.paginationPrev}`}>
+                        <button className={`${styles.paginationBtn} ${styles.paginationPrev}`} onClick={() => setPage(p => p - 1)} disabled={page === 0}>
                             <FaChevronLeft />
                         </button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber} ${styles.active}`}>1</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>2</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>3</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>4</button>
-                        <span className={styles.paginationEllipsis}>...</span>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNumber}`}>20</button>
-                        <button className={`${styles.paginationBtn} ${styles.paginationNext}`}>
+                        {page > 1 && (
+                             <>
+                                <button onClick={() => setPage(0)} className={`${styles.paginationBtn} ${styles.paginationNumber}`}>1</button>
+                                <span className={styles.paginationEllipsis}>...</span>
+                             </>
+                        )}
+                        {renderPaginationButtons()}
+                        {page < totalPages - 2 && (
+                            <>
+                                <span className={styles.paginationEllipsis}>...</span>
+                                <button onClick={() => setPage(totalPages - 1)} className={`${styles.paginationBtn} ${styles.paginationNumber}`}>{totalPages}</button>
+                            </>
+                        )}
+                        <button className={`${styles.paginationBtn} ${styles.paginationNext}`} onClick={() => setPage(p => p + 1)} disabled={page >= totalPages - 1}>
                             <FaChevronRight />
                         </button>
                     </div>

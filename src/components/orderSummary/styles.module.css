@@ -1,13 +1,21 @@
 .orderSummary {
+    background-color: #F7FAFC;
+    border-radius: 8px;
+    height: 700px;
+    overflow-y: auto;
+    height: auto;
+}
+
+.orderSummaryInside {
     flex: 0 0 400px;
     background-color: #F7FAFC;
     border-radius: 8px;
-    padding: 30px;
+    padding: 0 30px 0 30px;
     height: auto;
-    height: 600px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
+    margin-bottom: 20px;
 }
 
 .orderSummary h2 {

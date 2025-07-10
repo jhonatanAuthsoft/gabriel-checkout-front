@@ -1,0 +1,365 @@
+.mainContainer {
+    display: grid;
+    grid-template-columns: 250px 1fr;
+    grid-template-rows: 80px 1fr;
+    grid-template-areas:
+        "header header"
+        "sidebar content";
+    height: 100vh;
+    width: 100vw;
+    z-index: 30;
+    position: relative;
+}
+
+.mainHeader {
+    grid-area: header;
+    background-color: #121212;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0px 40px 0px 0px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    height: 80px;
+    z-index: 10;
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    height: 100%;
+}
+
+.mobileMenuBtn {
+    display: none;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 10px;
+    margin-right: 10px;
+    z-index: 30;
+    position: relative;
+}
+
+.logo {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    width: 300px;
+    height: 100%;
+    transform: scale(1.5);
+}
+
+.headerActions a {
+    color: white;
+    font-size: 18px;
+    text-decoration: none;
+}
+
+.sidebar {
+    grid-area: sidebar;
+    background-color: #D9D9D9;
+    padding: 100px 15px;
+    box-shadow: 1px 0 3px rgba(0, 0, 0, 0.05);
+    height: calc(100vh - 80px);
+    overflow-y: auto;
+    transition: transform 0.3s ease;
+}
+
+.overlay {
+    display: none;
+    position: fixed;
+    top: 80px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 5;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.overlay.active {
+    opacity: 1;
+}
+
+.sidebarNav {
+    display: flex;
+    flex-direction: column;
+}
+
+.navItem {
+    display: flex;
+    align-items: center;
+    padding: 5px 0px;
+    cursor: pointer;
+    position: relative;
+    color: #424242;
+    font-weight: 500;
+    border-left: 4px solid transparent;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0 5px 5px 0;
+    margin-bottom: 2px;
+    color: #000;
+    font-weight: 550;
+}
+
+.navItem i:first-child {
+    margin-right: 15px;
+    width: 20px;
+    text-align: center;
+    font-size: 16px;
+}
+
+.navItem span {
+    font-size: 15px;
+}
+
+.navItem .expandIcon {
+    position: absolute;
+    right: 20px;
+    transition: transform 0.3s ease-in-out;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.navItem.active {
+    background-color: #007bff;
+    color: white;
+    border-left: 4px solid #0056b3;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+}
+
+.navItem:hover:not(.active) {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 4px solid rgba(0, 123, 255, 0.5);
+}
+
+.expandIcon.rotate {
+    transform: rotate(180deg);
+}
+
+.subMenu {
+    padding: 0px 0;
+    margin-left: 10px;
+    border-radius: 0 0 5px 0;
+    color: #000;
+}
+
+.subMenu a {
+    text-decoration: none;
+    
+}
+
+.subMenuItem {
+    padding: 12px 20px 12px 50px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    border-radius: 0 5px 5px 0;
+    margin-bottom: 5px;
+    color: #000;
+    font-weight: 550;
+}
+
+.subMenuItem:hover {
+    border-radius: 10px;
+    background-color: rgba(0, 123, 255, 0.1);
+    border-left: 4px solid rgba(0, 123, 255, 0.5);
+}
+
+.subMenuItem.active {
+    color: #ffffff;
+    background-color: #0372e2;
+    border-radius: 10px;
+}
+
+.mainContent {
+    grid-area: content;
+    overflow-y: auto;
+    background-color: #FFFFFF;
+    padding: 100px 200px;
+    font-family: 'Poppins Bold', sans-serif;
+}
+
+.contentHeader {
+    margin-bottom: 30px;
+    width: 102%;
+    margin-left: -2%;
+}
+
+.pageTitle {
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+}
+
+.contentCard {
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
+}
+
+.contentCardHeader {
+    padding: 15px 20px;
+    border-bottom: 1px solid #eee;
+}
+
+.contentCardTitle {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.contentCardBody {
+    padding: 20px;
+}
+
+.inputGroup {
+    margin-bottom: 15px;
+}
+
+.label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #333;
+}
+
+.input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.paginationContainer {
+    display: flex;
+    justify-content: flex-end;
+    padding: 20px;
+}
+
+.paginationControls {
+    display: flex;
+    gap: 10px;
+}
+
+.paginationBtn {
+    padding: 10px 20px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.btnSave {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.actionsHeader {
+    text-align: right;
+    width: 120px;
+}
+
+.webhookTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.webhookTable th, .webhookTable td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.webhookTable th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+}
+
+.addWebhookForm {
+    display: flex;
+    gap: 10px;
+}
+
+.addWebhookForm .input {
+    flex-grow: 1;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 5px;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.btnPrimary {
+    background-color: #007bff;
+    color: white;
+}
+
+.btnSecondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btnActions {
+    display: flex;
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+.btnAction {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 5px;
+    transition: background-color 0.2s ease;
+}
+
+.btnEdit {
+    color: #007bff;
+}
+
+.btnEdit:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+.inlineEditInput {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #007bff;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.btnSaveInline {
+    color: #28a745;
+}
+
+.btnSaveInline:hover {
+    background-color: rgba(40, 167, 69, 0.1);
+}
+
+.btnCancelInline {
+    color: #dc3545;
+}
+
+.btnCancelInline:hover {
+    background-color: rgba(220, 53, 69, 0.1);
+} 

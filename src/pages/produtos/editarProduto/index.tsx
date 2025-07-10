@@ -6,8 +6,8 @@ import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowUpFromBra
 import logoImg from '../../../assets/img/df.png';
 import seloGarantiaImg from '../../../assets/img/seloGarantia.png';
 
-const NovoProduto: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+const EditarProduto: React.FC = () => {
+    const { produtoId } = useParams<{ produtoId: string }>();
     const navigate = useNavigate();
 
     const [produtoData, setProdutoData] = useState({
@@ -69,6 +69,7 @@ const NovoProduto: React.FC = () => {
     const [copiedUrlStatuses, setCopiedUrlStatuses] = useState<{ [key: string]: boolean }>({});
     const [tipoCobranca, setTipoCobranca] = useState('unica');
     const [primeiraParcela, setPrimeiraParcela] = useState('igual');
+    const [editingPlanoIndex, setEditingPlanoIndex] = useState<number | null>(null);
 
     const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
@@ -83,7 +84,7 @@ const NovoProduto: React.FC = () => {
 
     useEffect(() => {
         const fetchProductData = async () => {
-            if (!id) return;
+            if (!produtoId) return;
             const apiUrl = import.meta.env.VITE_API_URL;
             const token = localStorage.getItem('authToken');
             if (!apiUrl || !token) {
@@ -91,20 +92,27 @@ const NovoProduto: React.FC = () => {
                 return;
             }
             try {
-                const response = await fetch(`${apiUrl}produto/listar-por-id/${id}`, {
+                const response = await fetch(`${apiUrl}produto/listar-por-id/${produtoId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Falha ao carregar dados do produto.');
                 
                 const data = await response.json();
-                setProdutoData(data);
+                
+                setProdutoData(prevState => ({
+                    ...prevState,
+                    dadosProduto: data.dados.dadosProduto || prevState.dadosProduto,
+                    checkoutProduto: data.dados.checkoutProduto || prevState.checkoutProduto,
+                    planos: data.dados.planos || prevState.planos,
+                    cupom: data.dados.cupom || prevState.cupom,
+                }));
             } catch (error) {
                 console.error("Erro ao buscar produto:", error);
             }
         };
 
         fetchProductData();
-    }, [id]);
+    }, [produtoId]);
 
     useEffect(() => {
         const sidebar = sidebarRef.current;
@@ -204,8 +212,9 @@ const NovoProduto: React.FC = () => {
             return;
         }
 
-        const url = id ? `${apiUrl}produto/editar-produto/${id}` : `${apiUrl}produto/cadastrar`;
-        const method = id ? 'PATCH' : 'POST';
+        // Para edição, sempre usaremos o endpoint de editar
+        const url = `${apiUrl}produto/editar-produto/${produtoId}`;
+        const method = 'PATCH';
 
         try {
             const response = await fetch(url, {
@@ -371,16 +380,21 @@ const NovoProduto: React.FC = () => {
         });
     };
 
-    const handleSavePlano = () => {
-        handleAddPlano(newPlano);
-        setNewPlano(initialPlanoState);
-        setShowPlanoForm(false);
+    const handleEditPlano = (index: number) => {
+        setEditingPlanoIndex(index);
+        setNewPlano(produtoData.planos[index]);
+        setShowPlanoForm(true);
     };
 
-    const handleSaveCupom = () => {
-        handleAddCupom(newCupom);
-        setNewCupom(initialCupomState);
-        setShowCupomForm(false);
+    const handleSavePlano = () => {
+        if (editingPlanoIndex !== null) {
+            handleUpdatePlano(editingPlanoIndex, newPlano);
+        } else {
+            handleAddPlano(newPlano);
+        }
+        setNewPlano(initialPlanoState);
+        setShowPlanoForm(false);
+        setEditingPlanoIndex(null);
     };
 
     const handleAddPlano = (novoPlano: any) => {
@@ -500,7 +514,7 @@ const NovoProduto: React.FC = () => {
             <div className={`${styles.overlay}`} id="overlay" ref={overlayRef} onClick={toggleSidebar} />
             <main className={styles.mainContent}>
                 <div className={styles.contentHeader}>
-                    <h2 className={styles.pageTitle}>Novo Produto</h2>
+                    <h1 className={styles.pageTitle}>Editar Produto</h1>
                 </div>
                 <div className={styles.pageContent}>
                     <div className={styles.pageHeader}>
@@ -1362,7 +1376,11 @@ const NovoProduto: React.FC = () => {
                                 <div id="planoTableView">
                                     <div className={styles.contentCard}>
                                         <div className={styles.contentCardHeaderPlano}>
-                                            <button className={styles.paginationBtn2} onClick={() => setShowPlanoForm(true)}>Novo Plano</button>
+                                            <button className={styles.paginationBtn2} onClick={() => {
+                                                setEditingPlanoIndex(null);
+                                                setNewPlano(initialPlanoState);
+                                                setShowPlanoForm(true);
+                                            }}>Novo Plano</button>
                                     </div>
                                     <div className={styles.dataSection}>
                                             <div className={styles.tableContainer}>
@@ -1395,7 +1413,7 @@ const NovoProduto: React.FC = () => {
                                                                             <button className={`${styles.btnCopyUrl} ${copiedUrlStatuses[`urlCheckout${index}`] ? styles.copied : ''}`} title="Copiar URL" onClick={() => handleCopyUrl(`urlCheckout${index}`)}>
                                                                                 {copiedUrlStatuses[`urlCheckout${index}`] ? <FaCheck /> : <FaCopy />}
                                                                         </button>
-                                                                    </div>
+                                            </div>
                                                                 </td>
                                                                 <td style={{ width: 51 }}>
                                                                     <div className={styles.switchContainer}>
@@ -1409,8 +1427,8 @@ const NovoProduto: React.FC = () => {
                                                                             htmlFor="planoAtivo1"
                                                                         >
                                                                             <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
+                                                </label>
+                                            </div>
                                                                 </td>
                                                                 <td style={{ width: 51 }}>
                                                                     <div className={styles.switchContainer}>
@@ -1424,15 +1442,15 @@ const NovoProduto: React.FC = () => {
                                                                             htmlFor="planoPrivado1"
                                                                         >
                                                                             <span className={styles.sliderSwitch} />
-                                                                        </label>
-                                                                    </div>
+                                                </label>
+                                            </div>
                                                                 </td>
                                                                 <td className={`${styles['text-center']}`}>
                                                                     <div className={styles.btnActions}>
                                                                         <button className={`${styles.btnAction} ${styles.btnCopy}`}><FaCopy /></button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`}><FaPencilAlt /></button>
-                                                                        <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemovePlano(index)}><FaTrashAlt /></button>
-                                                                    </div>
+                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`} onClick={() => handleEditPlano(index)}><FaPencilAlt /></button>
+                                                                            <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemovePlano(index)}><FaTrashAlt /></button>
+                                        </div>
                                                                 </td>
                                                             </tr>
                                                                 {expandedRows[String(index)] && (
@@ -1454,7 +1472,7 @@ const NovoProduto: React.FC = () => {
                                                                                     <span className={styles.infoLabel}>Referência</span>
                                                                                     <span className={styles.infoLabel}>SKU</span>
                                                                                     <span className={styles.infoLabel}>Descrição</span>
-                                                                            </div>
+                                            </div>
                                                                                 <div className={styles.infoValues}>
                                                                                     <span className={styles.infoValue}>R$ {plano.preco}</span>
                                                                                     <span className={styles.infoValue}>
@@ -1467,9 +1485,9 @@ const NovoProduto: React.FC = () => {
                                                                                     <span className={styles.infoValue}>
                                                                                        {plano.descricao}
                                                                                     </span>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
+                                        </div>
+                                    </div>
+                                            </div>
                                                                     </td>
                                                                 </tr>
                                                             )}
@@ -1651,4 +1669,4 @@ const NovoProduto: React.FC = () => {
     );
 };
 
-export default NovoProduto; 
+export default EditarProduto; 

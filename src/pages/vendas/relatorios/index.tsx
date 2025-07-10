@@ -129,6 +129,9 @@ const Relatorios = () => {
                         <FaChevronDown className={`${styles.expandIcon} ${openSubMenus.includes('Configurações') ? styles.rotate : ''}`} />
                     </div>
                     <div className={styles.subMenu} style={{ display: openSubMenus.includes('Configurações') ? 'block' : 'none' }}>
+                        <a href="/configuracoes">
+                            <div className={`${styles.subMenuItem}`}>Geral</div>
+                        </a>
                         <a href="/clientes">
                             <div className={styles.subMenuItem}>Clientes</div>
                         </a>

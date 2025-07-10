@@ -43,7 +43,7 @@ const Login = () => {
             if (response.ok) {
                 const data = await response.json();
                 localStorage.setItem('authToken', data.token);
-                navigate('/vendas');
+                navigate('/assinaturas');
             } else {
                 const errorData = await response.json().catch(() => ({ message: 'Ocorreu um erro ao tentar fazer login.' }));
                 setError(errorData.message || 'Email ou senha inválidos.');
@@ -116,7 +116,6 @@ const Login = () => {
                         {error && <p className="error-message">{error}</p>}
                         <button type="submit">ENTRAR</button>
                         <a href="#" className="forgotPass">Esqueci Minha Senha</a>
-                        <a href="/register" className="forgotPass" style={{marginTop: "10px"}}>Não tem uma conta? Cadastre-se</a>
                     </form>
                 </div>
             </div>
