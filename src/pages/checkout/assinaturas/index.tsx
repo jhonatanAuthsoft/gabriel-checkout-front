@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
 import { FaBars, FaShoppingBag, FaCog, FaSearch, FaChevronDown, FaEllipsisV } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaSquareWhatsapp } from 'react-icons/fa6';
-import { jwtDecode } from 'jwt-decode';
+import jwt_decode from 'jwt-decode';
 import logo from '../../../assets/img/df.png';
 import productImg from '../../../assets/img/dfCirculo.png';
 
@@ -58,7 +58,7 @@ const Assinaturas: React.FC = () => {
         }
 
         try {
-            const decodedToken = jwtDecode<DecodedToken>(token);
+            const decodedToken = jwt_decode<DecodedToken>(token);
             const userEmail = decodedToken.sub;
 
             const response = await fetch(`${apiUrl}assinatura/listar-todos`, {
