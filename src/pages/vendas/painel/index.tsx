@@ -6,10 +6,66 @@ import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaChartBar, FaDolla
 import { FaArrowRightFromBracket } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 
+interface DashboardData {
+    periodoCalculadoInicio: string;
+    periodoCalculadoFim: string;
+    totalVendas: {
+        valorVendido: number;
+        totalVendasAtual: number;
+        percentualPeriodoAnterior: number;
+    };
+    ticketMedio: {
+        ticketMedio: number;
+        percentualPeriodoAnterior: number;
+    };
+    churn: {
+        percentualChurnPeriodoAtual: number;
+        percentualPeriodoAnterior: number;
+    };
+    produtosMaisVendidos: {
+        idProduto: number;
+        nome: string;
+        totalVendas: number;
+        percentualDasVendas: number;
+    }[];
+    reembolsos30Dias: {
+        totalReembolsos: number;
+        reembolsos: {
+            id: string;
+            produto: string;
+            data: string;
+        }[];
+    };
+    upsell: {
+        percentualUpsellPeriodoAtual: number;
+        percentualPeriodoAnterior: number;
+    };
+    chargebackDTO: {
+        totalChargeback: number;
+        periodoCalculadoInicio: string;
+        periodoCalculadoFim: string;
+        mesAmes: {
+            mes: string;
+            valor: number;
+        }[];
+    };
+    totalVendasPorPeriodoDTO: {
+        periodoCalculadoInicio: string;
+        periodoCalculadoFim: string;
+        mesAmes: {
+            mes: string;
+            totalVenda: number;
+            totalCampanha: number;
+            totalLink: number;
+        }[];
+    };
+}
+
 const VendasPainel = () => {
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [openSubMenus, setOpenSubMenus] = useState(['Vendas']);
-    const [activePeriod, setActivePeriod] = useState('Hoje');
+    const [activePeriod, setActivePeriod] = useState('Mês');
+    const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
     const chartRef = useRef<ChartType | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
@@ -46,45 +102,86 @@ const VendasPainel = () => {
         setActivePeriod(period);
     };
 
-    const chartData = {
-        'Últimos 6 Meses': {
-            labels: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho'],
-            datasets: [
-                { label: 'Total', data: [20000, 21000, 25000, 17000, 17000, 8000], backgroundColor: '#007bff', },
-                { label: 'Campanha', data: [13000, 12000, 7000, 8000, 12000, 5000], backgroundColor: '#212529', },
-                { label: 'Link', data: [7000, 7000, 16000, 7000, 4000, 4000], backgroundColor: '#dee2e6', }
-            ]
-        },
-        'Último Ano': {
-            labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-            datasets: [
-                { label: 'Total', data: [15000, 18000, 20000, 22000, 24000, 26000, 28000, 25000, 22000, 20000, 18000, 22000], backgroundColor: '#007bff', },
-                { label: 'Campanha', data: [8000, 10000, 12000, 14000, 15000, 16000, 17000, 15000, 13000, 12000, 10000, 12000], backgroundColor: '#212529', },
-                { label: 'Link', data: [7000, 8000, 8000, 8000, 9000, 10000, 11000, 10000, 9000, 8000, 8000, 10000], backgroundColor: '#dee2e6', }
-            ]
-        },
-        'Últimos 3 Meses': {
-            labels: ['Abril', 'Maio', 'Junho'],
-            datasets: [
-                { label: 'Total', data: [17000, 17000, 8000], backgroundColor: '#007bff', },
-                { label: 'Campanha', data: [8000, 12000, 5000], backgroundColor: '#212529', },
-                { label: 'Link', data: [7000, 4000, 4000], backgroundColor: '#dee2e6', }
-            ]
-        }
-    };
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                console.error("Token não encontrado.");
+                return;
+            }
+
+            const today = new Date();
+            let dataInicial = new Date();
+            const dataFim = today.toISOString().split('T')[0];
+
+            switch(activePeriod) {
+                case 'Hoje':
+                    dataInicial = new Date(today.setHours(0, 0, 0, 0));
+                    break;
+                case 'Semana':
+                    const firstDayOfWeek = today.getDate() - today.getDay();
+                    dataInicial = new Date(today.setDate(firstDayOfWeek));
+                    dataInicial.setHours(0, 0, 0, 0);
+                    break;
+                case 'Mês':
+                    dataInicial = new Date(today.getFullYear(), today.getMonth(), 1);
+                    break;
+                case 'Ano':
+                    dataInicial = new Date(today.getFullYear(), 0, 1);
+                    break;
+                default:
+                    dataInicial = new Date(today.getFullYear(), today.getMonth(), 1);
+                    break;
+            }
+
+            const dataInicialStr = dataInicial.toISOString().split('T')[0];
+            const apiUrl = import.meta.env.VITE_API_URL;
+            
+            try {
+                const response = await fetch(`${apiUrl}dashboard?dataInicial=${dataInicialStr}&dataFim=${dataFim}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Falha ao buscar dados do dashboard.');
+                }
+
+                const data: DashboardData = await response.json();
+                setDashboardData(data);
+            } catch (error) {
+                console.error("Erro ao buscar dados do dashboard:", error);
+                setDashboardData(null);
+            }
+        };
+
+        fetchDashboardData();
+    }, [activePeriod]);
 
     useEffect(() => {
-        if (canvasRef.current) {
+        if (canvasRef.current && dashboardData?.totalVendasPorPeriodoDTO) {
             if (chartRef.current) {
                 chartRef.current.destroy();
             }
+            
+            const { mesAmes } = dashboardData.totalVendasPorPeriodoDTO;
+            const labels = mesAmes.map(item => item.mes);
+            const totalVendaData = mesAmes.map(item => item.totalVenda);
+            const totalCampanhaData = mesAmes.map(item => item.totalCampanha);
+            const totalLinkData = mesAmes.map(item => item.totalLink);
+
+            const datasets = [
+                { label: 'Total', data: totalVendaData, backgroundColor: '#007bff' },
+                { label: 'Campanha', data: totalCampanhaData, backgroundColor: '#212529' },
+                { label: 'Link', data: totalLinkData, backgroundColor: '#dee2e6' }
+            ];
+
             const ctx = canvasRef.current.getContext('2d');
             if (ctx) {
                 chartRef.current = new Chart(ctx, {
                     type: 'bar',
                     data: {
-                      ...chartData['Últimos 6 Meses'],
-                      datasets: chartData['Últimos 6 Meses'].datasets.map(ds => ({
+                      labels: labels,
+                      datasets: datasets.map(ds => ({
                         ...ds,
                         borderWidth: 0,
                         borderRadius: 4,
@@ -109,7 +206,7 @@ const VendasPainel = () => {
                                         let label = context.dataset.label || '';
                                         if (label) { label += ': '; }
                                         if (context.parsed.y !== null) {
-                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(context.parsed.y);
+                                            label += new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(context.parsed.y);
                                         }
                                         return label;
                                     }
@@ -167,54 +264,34 @@ const VendasPainel = () => {
                 chartRef.current.destroy();
             }
         };
-    }, []);
+    }, [dashboardData]);
 
-    const handleChartPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const period = e.target.value as keyof typeof chartData;
-        if (chartRef.current && chartData[period]) {
-            const { labels, datasets } = chartData[period];
-            chartRef.current.data.labels = labels;
-            chartRef.current.data.datasets.forEach((d, i) => {
-                d.data = datasets[i].data;
-            });
-            chartRef.current.update();
-        }
+    const chargebackDisplayData = dashboardData?.chargebackDTO.mesAmes.map(item => ({ month: item.mes, value: item.valor })) || [];
+    const maxChargeback = Math.max(...chargebackDisplayData.map(d => d.value), 0);
+    const totalChargeback = dashboardData?.chargebackDTO.totalChargeback || 0;
+    
+    const formatCurrency = (value: number | undefined) => {
+        if (value === undefined) return 'R$ 0,00';
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
     };
 
-    const chargebackDataSets = {
-        'Últimos 6 Meses': [
-            { month: 'Janeiro', value: 170 }, { month: 'Fevereiro', value: 90 }, { month: 'Março', value: 200 },
-            { month: 'Abril', value: 47 }, { month: 'Maio', value: 25 }, { month: 'Junho', value: 49 },
-        ],
-        'Últimos 3 Meses': [
-            { month: 'Abril', value: 47 }, { month: 'Maio', value: 25 }, { month: 'Junho', value: 49 },
-        ],
-        'Último Ano': [
-            { month: 'Jan', value: 170 }, { month: 'Fev', value: 90 }, { month: 'Mar', value: 200 },
-            { month: 'Abr', value: 47 }, { month: 'Mai', value: 25 }, { month: 'Jun', value: 49 },
-            { month: 'Jul', value: 150 }, { month: 'Ago', value: 120 }, { month: 'Set', value: 180 },
-            { month: 'Out', value: 100 }, { month: 'Nov', value: 70 }, { month: 'Dez', value: 110 },
-        ]
+    const Trend = ({ value }: { value: number | undefined }) => {
+        if (value === undefined) return null;
+        const isPositive = value >= 0;
+        const colorClass = isPositive ? styles.positive : styles.negative;
+        const Icon = isPositive ? FaArrowUp : FaArrowDown;
+
+        return (
+            <div className={`${styles.cardTrend} ${colorClass}`}>
+                <p>
+                    <span className={styles.cardTrendText}>
+                        <Icon /> {Math.abs(value).toFixed(0)}%
+                    </span>
+                    este mês
+                </p>
+            </div>
+        );
     };
-
-    const [chargebackDisplayData, setChargebackDisplayData] = useState(chargebackDataSets['Últimos 6 Meses']);
-    const maxChargeback = Math.max(...chargebackDisplayData.map(d => d.value));
-    const totalChargeback = chargebackDisplayData.reduce((sum, item) => sum + item.value, 0);
-
-    const handleChargebackPeriodChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const period = e.target.value as keyof typeof chargebackDataSets;
-        if (chargebackDataSets[period]) {
-            setChargebackDisplayData(chargebackDataSets[period]);
-        }
-    };
-
-    const reembolsosData = [
-        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
-        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
-        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
-        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
-        { id: '9999', produto: 'Designerflix Mensal V.2', data: 'dd/mm/aaaa' },
-    ];
 
     return (
         <div className={styles.mainContainer}>
@@ -338,17 +415,10 @@ const VendasPainel = () => {
                 </div>
                 <div className={styles.cardContent}>
                 <div className={styles.cardLabel}>Total de Vendas</div>
-                <div className={styles.cardValue}>2.999.999,00</div>
+                <div className={styles.cardValue}>{formatCurrency(dashboardData?.totalVendas.valorVendido)}</div>
                 <div className={styles.cardSubContent}>
-                    <div className={styles.cardSubvalue}>1450</div>
-                    <div className={`${styles.cardTrend} ${styles.positive}`}>
-                    <p>
-                        <span className={styles.cardTrendText}>
-                        <FaArrowUp /> 15%{" "}
-                        </span>
-                        este mês
-                    </p>
-                    </div>
+                    <div className={styles.cardSubvalue}>{dashboardData?.totalVendas.totalVendasAtual || 0}</div>
+                    <Trend value={dashboardData?.totalVendas.percentualPeriodoAnterior} />
                 </div>
                 </div>
             </div>
@@ -358,16 +428,9 @@ const VendasPainel = () => {
                 </div>
                 <div className={styles.cardContent}>
                 <div className={styles.cardLabel}>Ticket Médio</div>
-                <div className={styles.cardValue}>75,00</div>
+                <div className={styles.cardValue}>{formatCurrency(dashboardData?.ticketMedio.ticketMedio)}</div>
                 <div className={styles.cardSubContent}>
-                    <div className={`${styles.cardTrend} ${styles.negative}`}>
-                    <p>
-                        <span className={styles.cardTrendText}>
-                        <FaArrowUp /> 1%{" "}
-                        </span>
-                        este mês
-                    </p>
-                    </div>
+                    <Trend value={dashboardData?.ticketMedio.percentualPeriodoAnterior} />
                 </div>
                 </div>
             </div>
@@ -377,16 +440,9 @@ const VendasPainel = () => {
                 </div>
                 <div className={styles.cardContent}>
                 <div className={styles.cardLabel}>Churn</div>
-                <div className={styles.cardValue}>10%</div>
+                <div className={styles.cardValue}>{dashboardData?.churn.percentualChurnPeriodoAtual.toFixed(2) || '0.00'}%</div>
                 <div className={styles.cardSubContent}>
-                    <div className={`${styles.cardTrend} ${styles.semi}`}>
-                    <p>
-                        <span className={styles.cardTrendText}>
-                        <FaArrowDown /> 5%{" "}
-                        </span>
-                        este mês
-                    </p>
-                    </div>
+                     <Trend value={dashboardData?.churn.percentualPeriodoAnterior} />
                 </div>
                 </div>
             </div>
@@ -396,16 +452,9 @@ const VendasPainel = () => {
                 </div>
                 <div className={styles.cardContent}>
                 <div className={styles.cardLabel}>Upsell</div>
-                <div className={styles.cardValue}>25%</div>
+                <div className={styles.cardValue}>{dashboardData?.upsell.percentualUpsellPeriodoAtual.toFixed(2) || '0.00'}%</div>
                 <div className={styles.cardSubContent}>
-                    <div className={`${styles.cardTrend} ${styles.positive}`}>
-                    <p>
-                        <span className={styles.cardTrendText}>
-                        <FaArrowUp /> 10%{" "}
-                        </span>
-                        este mês
-                    </p>
-                    </div>
+                    <Trend value={dashboardData?.upsell.percentualPeriodoAnterior} />
                 </div>
                 </div>
             </div>
@@ -415,14 +464,6 @@ const VendasPainel = () => {
                     <div className={styles.sectionHeader}>
                         <h3 className={styles.sectionTitle}>Total de Vendas por Período</h3>
                         <div className={styles.sectionActions}>
-                            <select
-                            className={styles.periodSelect}
-                            onChange={handleChartPeriodChange}
-                            >
-                            <option>Últimos 6 Meses</option>
-                            <option>Último Ano</option>
-                            <option>Últimos 3 Meses</option>
-                            </select>
                             <button className={`${styles.goButton} ${styles.goBtn1}`}>
                             <FaArrowRightFromBracket />
                             </button>
@@ -451,38 +492,16 @@ const VendasPainel = () => {
                         </tr>
                         </thead>
                         <tbody>
-                        <tr>
-                            <td>01</td>
-                            <td>Designerflix Mensal V.2</td>
-                            <td>
-                            <span className={styles.salesCount}>495</span> /{" "}
-                            <span className={styles.salesPercentage}>45%</span>
+                        {dashboardData?.produtosMaisVendidos.map((produto, index) => (
+                            <tr key={produto.idProduto}>
+                                <td>{String(index + 1).padStart(2, '0')}</td>
+                                <td>{produto.nome}</td>
+                                <td>
+                                    <span className={styles.salesCount}>{produto.totalVendas}</span> /{" "}
+                                    <span className={styles.salesPercentage}>{produto.percentualDasVendas.toFixed(2)}%</span>
                             </td>
                         </tr>
-                        <tr>
-                            <td>01</td>
-                            <td>Designerflix Mensal V.2</td>
-                            <td>
-                            <span className={styles.salesCount}>495</span> /{" "}
-                            <span className={styles.salesPercentage}>45%</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>01</td>
-                            <td>Designerflix Mensal V.2</td>
-                            <td>
-                            <span className={styles.salesCount}>495</span> /{" "}
-                            <span className={styles.salesPercentage}>45%</span>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>01</td>
-                            <td>Designerflix Mensal V.2</td>
-                            <td>
-                            <span className={styles.salesCount}>495</span> /{" "}
-                            <span className={styles.salesPercentage}>45%</span>
-                            </td>
-                        </tr>
+                        ))}
                         </tbody>
                     </table>
                     </div>
@@ -494,13 +513,6 @@ const VendasPainel = () => {
                         <h3 className={styles.sectionTitle}>ChargeBack</h3>
                         <div className={styles.cardTotal}>
                             <span className={styles.cardTotalLabel}>TOTAL </span><strong className={styles.cardTotalValue}>{totalChargeback}</strong>
-                        </div>
-                        <div className={styles.selectWrapper}>
-                            <select className={styles.periodSelect} onChange={handleChargebackPeriodChange}>
-                                <option value="Últimos 6 Meses">Últimos 6 meses</option>
-                                <option value="Últimos 3 Meses">Últimos 3 meses</option>
-                                <option value="Último Ano">Último ano</option>
-                            </select>
                         </div>
                         <div className={styles.sectionActions}>
                             <button className={styles.goButton}>
@@ -515,7 +527,7 @@ const VendasPainel = () => {
                                 <div className={styles.chargebackBarContainer}>
                                     <div 
                                         className={styles.chargebackBar}
-                                        style={{ width: `${(item.value / maxChargeback) * 100}%` }}
+                                        style={{ width: `${maxChargeback > 0 ? (item.value / maxChargeback) * 100 : 0}%` }}
                                     ></div>
                                 </div>
                                 <span className={styles.chargebackValue}>{item.value}</span>
@@ -533,7 +545,7 @@ const VendasPainel = () => {
                     <div className={styles.sectionHeader}>
                         <h3 className={styles.sectionTitle}>Reembolsos Últimos 30 dias</h3>
                         <div className={styles.cardTotal}>
-                            <span className={styles.cardTotalLabel}>TOTAL </span><strong className={styles.cardTotalValue}>50</strong>
+                            <span className={styles.cardTotalLabel}>TOTAL </span><strong className={styles.cardTotalValue}>{dashboardData?.reembolsos30Dias.totalReembolsos || 0}</strong>
                         </div>
                         <div className={styles.sectionActions}>
                             <button className={styles.goButton}>
@@ -551,7 +563,7 @@ const VendasPainel = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {reembolsosData.map((item, index) => (
+                                {dashboardData?.reembolsos30Dias.reembolsos.map((item, index) => (
                                     <tr key={index}>
                                         <td>{item.id}</td>
                                         <td>{item.produto}</td>

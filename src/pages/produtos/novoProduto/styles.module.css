@@ -261,14 +261,21 @@
 }
 
 .checkIcon {
-    color: #79CC5B;
+    color: #28a745;
+    margin-left: 10px;
+}
+
+.errorMessage {
+    color: #dc3545;
+    font-size: 0.875em;
+    margin-top: 5px;
 }
 
 .urlText {
-    color: #292D32;
+    color: #007bff;
+    text-decoration: none;
     font-family: 'Poppins Semi Bold';
     font-size: 14px;
-    text-decoration: underline;
     cursor: pointer;
 }
 

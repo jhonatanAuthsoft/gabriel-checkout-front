@@ -390,7 +390,7 @@ const EditarProduto: React.FC = () => {
         if (editingPlanoIndex !== null) {
             handleUpdatePlano(editingPlanoIndex, newPlano);
         } else {
-            handleAddPlano(newPlano);
+        handleAddPlano(newPlano);
         }
         setNewPlano(initialPlanoState);
         setShowPlanoForm(false);

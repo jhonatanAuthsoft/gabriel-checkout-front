@@ -11,10 +11,10 @@ interface Assinatura {
     id: string;
     venda: {
         id: number;
-        produto: {
+    produto: {
             dadosProduto: {
-                dadosGerais: {
-                    nome: string;
+        dadosGerais: {
+            nome: string;
                 }
             }
         }
@@ -372,4 +372,4 @@ const Assinaturas: React.FC = () => {
     );
 };
 
-export default Assinaturas;
+export default Assinaturas; 

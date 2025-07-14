@@ -58,24 +58,24 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                         <button className={styles.btnApply} onClick={onApplyCoupon}>Aplicar</button>
                     </div>
                 </div>
-
+                
                 <div className={styles.orderDetails}>
                     <div className={styles.orderRow}>
                         <span>Subtotal</span>
                         <span>{formatCurrency(totalPrice)}</span>
                     </div>
                     {discount > 0 && (
-                        <div className={styles.orderRow}>
+                    <div className={styles.orderRow}>
                             <span>Descontos</span>
                             <span>- {formatCurrency(discount)}</span>
-                        </div>
+                    </div>
                     )}
                     <div className={styles.orderTotal}>
                         <h3>Total</h3>
                         <div className={styles.totalPrice}>{formatCurrency(finalPrice)}</div>
                     </div>
                 </div>
-
+                
                 <div className={styles.deliveryInfo}>
                     <span>ENTREGA</span>
                     <span>Imediata, via E-mail</span>

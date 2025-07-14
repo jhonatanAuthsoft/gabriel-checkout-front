@@ -41,9 +41,15 @@ const NovoProduto: React.FC = () => {
                 telefoneSuporte: '',
                 mostrarTelefoneSuporte: false,
                 whatsappSuporte: '',
-                mostrarWhatsappSuporte: false
+                mostrarWhatsappSuporte: false,
+                selo: 0,
+                garantia: 0
             },
-            urlPersonalizada: ''
+            personalizacao: {
+                tipoPagina: 'PROPRIO',
+                urlPaginaVenda: '',
+                urlPaginaObrigado: ''
+            }
         },
         checkoutProduto: {
             exibicoes: {
@@ -70,6 +76,14 @@ const NovoProduto: React.FC = () => {
     const [tipoCobranca, setTipoCobranca] = useState('unica');
     const [primeiraParcela, setPrimeiraParcela] = useState('igual');
 
+    const [validationStatus, setValidationStatus] = useState({
+        dadosGerais: false,
+        formatoCategoria: false,
+        cobranca: false,
+        suporteGarantia: false,
+        personalizacao: false
+    });
+
     const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
@@ -80,6 +94,43 @@ const NovoProduto: React.FC = () => {
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+
+    const sectionRefs = {
+        dadosGerais: useRef<HTMLDivElement>(null),
+        formatoCategoria: useRef<HTMLDivElement>(null),
+        cobranca: useRef<HTMLDivElement>(null),
+        disponibilidade: useRef<HTMLDivElement>(null),
+        suporteGarantia: useRef<HTMLDivElement>(null),
+        personalizacao: useRef<HTMLDivElement>(null),
+        checkout: useRef<HTMLDivElement>(null),
+        planos: useRef<HTMLDivElement>(null),
+        cupons: useRef<HTMLDivElement>(null)
+    };
+
+    const scrollToSection = (ref: React.RefObject<HTMLDivElement>) => {
+        ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    useEffect(() => {
+        const validateSections = () => {
+            const { dadosGerais, formatoCategoria, cobranca, suporteGarantia, personalizacao } = produtoData.dadosProduto;
+            
+            const dadosGeraisValid = dadosGerais.nome.trim() !== '' && dadosGerais.descricao.trim() !== '';
+            const formatoCategoriaValid = formatoCategoria.formato !== '' && formatoCategoria.categoria !== '';
+            const cobrancaValid = cobranca.gratis || cobranca.preco > 0;
+            const suporteGarantiaValid = suporteGarantia.email.trim() !== '' && suporteGarantia.selo > 0 && suporteGarantia.garantia > 0;
+            const personalizacaoValid = personalizacao.urlPaginaVenda.trim() !== '' && personalizacao.urlPaginaObrigado.trim() !== '';
+
+            setValidationStatus({
+                dadosGerais: dadosGeraisValid,
+                formatoCategoria: formatoCategoriaValid,
+                cobranca: cobrancaValid,
+                suporteGarantia: suporteGarantiaValid,
+                personalizacao: personalizacaoValid
+            });
+        };
+        validateSections();
+    }, [produtoData]);
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -517,7 +568,7 @@ const NovoProduto: React.FC = () => {
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Dados Gerais</h2>
-                                    <FaCheckCircle className={styles.checkIcon} />
+                                    {validationStatus.dadosGerais && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.dataSection}>
@@ -552,13 +603,10 @@ const NovoProduto: React.FC = () => {
                                                     value={produtoData.dadosProduto.dadosGerais.descricao}
                                                     onChange={handleDescriptionChange}
                                                 />
-                                                <p className={styles.textCount}>
-                                                    <span>{produtoData.dadosProduto.dadosGerais.descricao.length}</span>/1000
-                                                </p>
+                                                {!validationStatus.dadosGerais && <p className={styles.errorMessage}>Campos obrigatórios não preenchidos</p>}
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
@@ -601,13 +649,13 @@ const NovoProduto: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {!validationStatus.formatoCategoria && <p className={styles.errorMessage}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Cobrança</h2>
-                                    <FaCheckCircle className={styles.checkIcon} />
+                                    {validationStatus.cobranca && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.dataSection}>
@@ -672,7 +720,10 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="preco">
                                                     Preço
                                                 </label>
-                                                <input type="number" name="dadosProduto.cobranca.preco" placeholder="0,00" className={styles.input} value={produtoData.dadosProduto.cobranca.preco} onChange={(e) => handleInputChange(e.target.name, parseFloat(e.target.value))} />
+                                                <div className={styles.precoInput}>
+                                                    <span>R$</span>
+                                                    <input type="number" name="dadosProduto.cobranca.preco" placeholder="0,00" className={styles.input} value={produtoData.dadosProduto.cobranca.preco} onChange={(e) => handleInputChange(e.target.name, parseFloat(e.target.value))} />
+                                                </div>
                                             </div>
                                             <div className={styles.sliderGroup}>
                                                 <div className={styles.switchContainer}>
@@ -736,7 +787,7 @@ const NovoProduto: React.FC = () => {
                                             </>
                                         )}
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {!validationStatus.cobranca && !produtoData.dadosProduto.cobranca.gratis && <p className={styles.errorMessage}>O preço deve ser maior que zero.</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
@@ -819,7 +870,9 @@ const NovoProduto: React.FC = () => {
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
-                                    <h2 className={styles.contentCardTitle}>Suporte e Garantia</h2>
+                                    <h2 className={styles.sectionTitle} onClick={() => scrollToSection(sectionRefs.suporteGarantia)}>
+                                        Suporte e Garantia {validationStatus.suporteGarantia && <FaCheckCircle className={styles.checkIcon} />}
+                                    </h2>
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.dataSection}>
@@ -905,15 +958,11 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="garantia">
                                                     Tempo de garantia
                                                 </label>
-                                                <select className={styles.filterSelect}>
-                                                    <option value="" />
-                                                    <option value="fisico">3 Meses</option>
-                                                    <option value="digital">6 Meses</option>
-                                                    <option value="digital">1 Ano</option>
-                                                    <option value="digital">2 Anos</option>
-                                                    <option value="digital">3 Anos</option>
-                                                    <option value="digital">4 Anos</option>
-                                                    <option value="digital">5 Anos</option>
+                                                <select className={styles.filterSelect} name="dadosProduto.suporteGarantia.garantia" value={produtoData.dadosProduto.suporteGarantia.garantia} onChange={(e) => handleInputChange(e.target.name, parseInt(e.target.value))}>
+                                                    <option value="0">Selecione</option>
+                                                    <option value="7">7 Dias</option>
+                                                    <option value="15">15 Dias</option>
+                                                    <option value="30">30 Dias</option>
                                                 </select>
                                                 <FaChevronDown className={styles.selectIcon} />
                                             </div>
@@ -924,86 +973,34 @@ const NovoProduto: React.FC = () => {
                                                     Selo de Garantia
                                                 </label>
                                                 <div className={styles.stampGroupBody}>
-                                                    <div className={`${styles.stamp} ${styles.active}`}>
-                                                        <div className={styles.stampHead}>Selo 1</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
+                                                    {[1, 2, 3, 4, 5, 6, 7].map(seloNum => (
+                                                        <div 
+                                                            key={seloNum}
+                                                            className={`${styles.stamp} ${produtoData.dadosProduto.suporteGarantia.selo === seloNum ? styles.active : ''}`}
+                                                            onClick={() => handleInputChange('dadosProduto.suporteGarantia.selo', seloNum)}
+                                                        >
+                                                            <div className={styles.stampHead}>Selo {seloNum}</div>
+                                                            <div className={styles.stampBody}>
+                                                                <img
+                                                                    className={styles.stampImg}
+                                                                    src={seloGarantiaImg}
+                                                                    alt={`Selo de Garantia ${seloNum}`}
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 2</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 3</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 4</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 5</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 6</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 7</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {!validationStatus.suporteGarantia && <p className={styles.errorMessage}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
-                                    <h2 className={styles.contentCardTitle}>URL's Personalizadas</h2>
+                                    <h2 className={styles.sectionTitle} onClick={() => scrollToSection(sectionRefs.personalizacao)}>
+                                        URL's Personalizadas {validationStatus.personalizacao && <FaCheckCircle className={styles.checkIcon} />}
+                                    </h2>
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.dataSection}>
@@ -1018,8 +1015,10 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="dadosProduto.urlPersonalizada"
-                                                            defaultValue="proprio"
+                                                            name="dadosProduto.personalizacao.tipoPagina"
+                                                            value="PROPRIO"
+                                                            checked={produtoData.dadosProduto.personalizacao.tipoPagina === 'PROPRIO'}
+                                                            onChange={(e) => handleInputChange(e.target.name, e.target.value)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Meu próprio site
@@ -1027,8 +1026,10 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="dadosProduto.urlPersonalizada"
-                                                            defaultValue="instagram"
+                                                            name="dadosProduto.personalizacao.tipoPagina"
+                                                            value="INSTAGRAM"
+                                                            checked={produtoData.dadosProduto.personalizacao.tipoPagina === 'INSTAGRAM'}
+                                                            onChange={(e) => handleInputChange(e.target.name, e.target.value)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Instagram
@@ -1038,10 +1039,10 @@ const NovoProduto: React.FC = () => {
                                         </div>
                                         <div className={styles.dataCol5}>
                                             <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="instagram">
-                                                    URL da página do perfil do Instagram
+                                                <label className={styles.label} htmlFor="urlPaginaVenda">
+                                                    {produtoData.dadosProduto.personalizacao.tipoPagina === 'INSTAGRAM' ? 'URL da página do perfil do Instagram' : 'URL da página de venda'}
                                                 </label>
-                                                <input type="text" name="dadosProduto.urlPersonalizada" className={styles.input} value={produtoData.dadosProduto.urlPersonalizada} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
+                                                <input type="text" name="dadosProduto.personalizacao.urlPaginaVenda" className={styles.input} value={produtoData.dadosProduto.personalizacao.urlPaginaVenda} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                         </div>
                                         <label className={`${styles.label} ${styles.interSection}`}>
@@ -1049,19 +1050,21 @@ const NovoProduto: React.FC = () => {
                                         </label>
                                         <div className={styles.dataCol5}>
                                             <div className={styles.inputGroup}>
-                                                <label className={styles.label} htmlFor="email">
+                                                <label className={styles.label} htmlFor="urlPaginaObrigado">
                                                     URL da página de obrigado
                                                 </label>
-                                                <input type="text" name="dadosProduto.urlPersonalizada" className={styles.input} value={produtoData.dadosProduto.urlPersonalizada} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
+                                                <input type="text" name="dadosProduto.personalizacao.urlPaginaObrigado" className={styles.input} value={produtoData.dadosProduto.personalizacao.urlPaginaObrigado} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {!validationStatus.personalizacao && <p className={styles.errorMessage}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
-                                    <h2 className={styles.contentCardTitle}>Fotos</h2>
+                                    <h2 className={styles.sectionTitle} onClick={() => scrollToSection(sectionRefs.fotos)}>
+                                        Fotos {validationStatus.fotos && <FaCheckCircle className={styles.checkIcon} />}
+                                    </h2>
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.selectDocs}>
@@ -1077,7 +1080,7 @@ const NovoProduto: React.FC = () => {
                                         />
                                         <p className={styles.maxLenght}>Tamanho Máximo: x MB</p>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {!validationStatus.fotos && <p className={styles.errorMessage}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.paginationContainer}>
@@ -1093,7 +1096,9 @@ const NovoProduto: React.FC = () => {
                         <div className={styles.contentSection} id="checkoutSection">
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
-                                    <h2 className={styles.contentCardTitle}>Banner</h2>
+                                    <h2 className={styles.sectionTitle} onClick={() => scrollToSection(sectionRefs.banner)}>
+                                        Banner {validationStatus.banner && <FaCheckCircle className={styles.checkIcon} />}
+                                    </h2>
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.selectDocs}>
@@ -1108,12 +1113,14 @@ const NovoProduto: React.FC = () => {
                                         />
                                         <p className={styles.maxLenght}>Tamanho Máximo: x MB. Para melhor resultado utilize imagens no tamanho 999 x 99</p>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {!validationStatus.banner && <p className={styles.errorMessage}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
-                                    <h2 className={styles.contentCardTitle}>Exibições</h2>
+                                    <h2 className={styles.sectionTitle} onClick={() => scrollToSection(sectionRefs.exibicoes)}>
+                                        Exibições {validationStatus.exibicoes && <FaCheckCircle className={styles.checkIcon} />}
+                                    </h2>
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.sliderGroup}>
@@ -1619,8 +1626,8 @@ const NovoProduto: React.FC = () => {
                                                                             htmlFor="cupomAtivo1"
                                                                         >
                                                                             <span className={styles.sliderSwitch} />
-                                                </label>
-                                            </div>
+                                                                        </label>
+                                                                    </div>
                                                                 </td>
                                                                 <td>
                                                                     <div className={styles.btnActions}>
