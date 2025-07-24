@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { createHashRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import Login from './pages/login';
 import MeusProdutos from './pages/produtos/meusProdutos';
 import NovoProduto from './pages/produtos/novoProduto';
@@ -14,7 +14,7 @@ import Assinaturas from './pages/checkout/assinaturas';
 import Checkout from './pages/checkout';
 import ConfiguracoesGerais from './pages/configuracoes/geral';
 
-const router = createHashRouter([
+const router = createBrowserRouter([
   {
     path: '/',
     element: <Login />,
