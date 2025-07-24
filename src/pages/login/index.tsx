@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import './styles.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
 import jwtDecode from 'jwt-decode';
+import logo from '../../assets/img/df.png';
 
 const Login = () => {
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -98,12 +99,12 @@ const Login = () => {
         <div className="container">
             <div id="logoSide">
                 <div id="logoContainer">
-                    <img id="logo" src="/src/assets/img/df.png" alt="logo" />
+                    <img id="logo" src={logo} alt="logo" />
                 </div>
             </div>
             <div id="checkoutSide">
                 <div className="logoContainerPhone">
-                    <img src="/src/assets/img/df.png" alt="logo" className="logoPhone" />
+                    <img src={logo} alt="logo" className="logoPhone" />
                 </div>
                 <div className="loginContainer">
                     <h2 className="loginTitle">Prossiga para a sua conta</h2>

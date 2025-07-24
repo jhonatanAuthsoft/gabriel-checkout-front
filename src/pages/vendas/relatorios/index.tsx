@@ -3,6 +3,7 @@ import styles from './styles.module.css';
 import { FaShoppingBag, FaCog, FaBox, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaFileExport, FaXmark, FaSort, FaArrowUpRightFromSquare, FaChevronLeft, FaChevronRight, FaFilter } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
+import { useNavigate } from 'react-router-dom';
 
 interface Venda {
     id: number;
@@ -81,6 +82,12 @@ const Relatorios = () => {
     const [totalItems, setTotalItems] = useState(0);
     const [rowExportMenu, setRowExportMenu] = useState<number | null>(null);
     const rowExportMenuRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
 
     const toggleMobileMenu = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -458,9 +465,9 @@ const Relatorios = () => {
                     <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
             <aside className={`${styles.sidebar} ${isSidebarActive ? styles.active : ''}`}>

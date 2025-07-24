@@ -3,6 +3,7 @@ import styles from './styles.module.css';
 import { FaShoppingBag, FaBox, FaCog, FaChevronDown, FaBars, FaSearch, FaSort, FaChevronRight, FaChevronLeft, FaPencilAlt } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaTrashCan } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
+import { useNavigate } from 'react-router-dom';
 
 interface Usuario {
     id: number;
@@ -51,6 +52,12 @@ const Usuarios: React.FC = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [newUser, setNewUser] = useState(initialUserState);
     const [editingUser, setEditingUser] = useState<Usuario | null>(null);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
 
     useEffect(() => {
         const fetchUsuarios = async () => {
@@ -244,9 +251,9 @@ const Usuarios: React.FC = () => {
                     <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
             <aside className={`${styles.sidebar} ${isSidebarActive ? styles.active : ''}`}>

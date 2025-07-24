@@ -42,7 +42,6 @@
 }
 
 #logo {
-    background-image: url('../../assets/img/df.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -55,6 +54,15 @@
     color: white;
     font-size: 18px;
     text-decoration: none;
+}
+
+.exitButton {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 0;
 }
 
 .sidebar {

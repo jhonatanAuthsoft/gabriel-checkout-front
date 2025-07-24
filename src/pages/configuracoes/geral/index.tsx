@@ -3,6 +3,7 @@ import styles from './styles.module.css';
 import { FaShoppingBag, FaBox, FaCog, FaChevronDown, FaBars, FaPencilAlt, FaTrashAlt, FaCheck, FaTimes } from 'react-icons/fa';
 import { FaArrowRightFromBracket } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
+import { useNavigate } from 'react-router-dom';
 
 interface Webhook {
     id: number;
@@ -17,6 +18,12 @@ const ConfiguracoesGerais: React.FC = () => {
     const [editingWebhookId, setEditingWebhookId] = useState<number | null>(null);
     const [editingUrl, setEditingUrl] = useState('');
     const overlayRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
 
     const apiUrl = import.meta.env.VITE_API_URL;
     const token = localStorage.getItem('authToken');
@@ -142,9 +149,9 @@ const ConfiguracoesGerais: React.FC = () => {
                     <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
             <aside className={`${styles.sidebar} ${isSidebarActive ? styles.active : ''}`}>

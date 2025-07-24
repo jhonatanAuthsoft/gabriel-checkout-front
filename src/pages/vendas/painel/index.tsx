@@ -5,6 +5,7 @@ import type { Chart as ChartType } from 'chart.js';
 import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaChartBar, FaDollarSign, FaUserSlash, FaShoppingCart, FaArrowUp, FaArrowDown, FaExpandAlt } from 'react-icons/fa';
 import { FaArrowRightFromBracket } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
+import { useNavigate } from 'react-router-dom';
 
 interface DashboardData {
     periodoCalculadoInicio: string;
@@ -69,6 +70,12 @@ const VendasPainel = () => {
     const chartRef = useRef<ChartType | null>(null);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const overlayRef = useRef<HTMLDivElement>(null);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
 
     const toggleMobileMenu = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -310,9 +317,9 @@ const VendasPainel = () => {
             />
             </div>
             <div className={styles.headerActions}>
-            <a href="#" className={styles.exitButton}>
+            <button onClick={handleLogout} className={styles.exitButton}>
                 <FaArrowRightFromBracket />
-            </a>
+            </button>
             </div>
         </header>
         <aside

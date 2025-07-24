@@ -49,6 +49,11 @@ const Assinaturas: React.FC = () => {
     const [assinaturas, setAssinaturas] = useState<Assinatura[]>([]);
     const navigate = useNavigate();
 
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
+
     const fetchAssinaturas = async () => {
         const token = localStorage.getItem('authToken');
         const apiUrl = import.meta.env.VITE_API_URL;
@@ -264,9 +269,9 @@ const Assinaturas: React.FC = () => {
                     <div id="logo" style={{ backgroundImage: `url(${logo})`}}></div>
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
 

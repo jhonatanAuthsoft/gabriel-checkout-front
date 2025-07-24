@@ -79,13 +79,18 @@ const NovoProduto: React.FC = () => {
     const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
-    const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '', ativo: true };
+    const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
     const [newCupom, setNewCupom] = useState(initialCupomState);
 
     const overlayRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -509,20 +514,6 @@ const NovoProduto: React.FC = () => {
         }));
     };
 
-    const handleToggleCupomAtivo = (index: number) => {
-        setProdutoData(prev => {
-            const novosCupons = [...prev.cupom];
-            novosCupons[index] = {
-                ...novosCupons[index],
-                ativo: !novosCupons[index].ativo
-            };
-            return {
-                ...prev,
-                cupom: novosCupons
-            };
-        });
-    };
-
     return (
         <div className={styles.mainContainer}>
             <header className={styles.mainHeader}>
@@ -530,12 +521,12 @@ const NovoProduto: React.FC = () => {
                     <button id="mobileMenuBtn" className={styles.mobileMenuBtn} onClick={toggleSidebar}>
                         <FaBars />
                     </button>
-                    <div id="logo" style={{ backgroundImage: `url(${logoImg})` }} />
+                    <div id="logo" style={{ backgroundImage: `url(${logoImg})` }}></div>
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
             <aside className={styles.sidebar} ref={sidebarRef}>
@@ -1736,8 +1727,6 @@ const NovoProduto: React.FC = () => {
                                                                             type="checkbox"
                                                                             className={styles.slideCheckbox}
                                                                             id={`cupomAtivo${originalIndex}`}
-                                                                            checked={cupom.ativo}
-                                                                            onChange={() => handleToggleCupomAtivo(originalIndex)}
                                                                         />
                                                                         <label
                                                                             className={styles.slideSwitch}

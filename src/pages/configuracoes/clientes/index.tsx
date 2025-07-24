@@ -3,6 +3,7 @@ import styles from './styles.module.css';
 import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaSearch, FaSort, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaArrowUpRightFromSquare } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
+import { useNavigate } from 'react-router-dom';
 
 interface Cliente {
     id: number;
@@ -18,6 +19,12 @@ const Clientes: React.FC = () => {
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const navigate = useNavigate();
+
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
 
     useEffect(() => {
         const fetchClientes = async () => {
@@ -109,9 +116,9 @@ const Clientes: React.FC = () => {
                     <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
             <aside className={`${styles.sidebar} ${isSidebarActive ? styles.active : ''}`}>

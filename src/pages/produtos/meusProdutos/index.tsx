@@ -35,6 +35,11 @@ const MeusProdutos = () => {
     const navigate = useNavigate();
     const overlayRef = useRef<HTMLDivElement>(null);
 
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
+
     const productsPerPage = 10;
 
     const productsToDisplay = allProducts
@@ -194,9 +199,9 @@ const MeusProdutos = () => {
                     <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
-                    <a href="#" className={styles.exitButton}>
+                    <button onClick={handleLogout} className={styles.exitButton}>
                         <FaArrowRightFromBracket />
-                    </a>
+                    </button>
                 </div>
             </header>
             <aside className={`${styles.sidebar} ${isSidebarActive ? styles.active : ''}`}>
