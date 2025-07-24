@@ -19,16 +19,17 @@ RUN npm run build
 
 # ---
 
-# Estágio 2: Runner - Serve os arquivos estáticos com NGINX
-# Usamos uma imagem NGINX oficial, que é leve e otimizada para servir conteúdo estático
+# Estágio 2: Nginx
 FROM nginx:stable-alpine
 
-# Copia os arquivos estáticos gerados no estágio 'builder' (da pasta /app/dist)
-# para a pasta padrão que o NGINX usa para servir conteúdo web.
+# Remove o default.conf padrão (opcional, você pode sobrescrever direto)
+RUN rm /etc/nginx/conf.d/default.conf
+
+# Copia seu default.conf customizado
+COPY nginx/default.conf /etc/nginx/conf.d/default.conf
+
+# Copia os estáticos do build
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Expõe a porta 80, que é a porta padrão do NGINX
 EXPOSE 80
-
-# O NGINX já tem um comando padrão para iniciar o servidor,
-# então não precisamos de um CMD aqui.
+# CMD padrão do nginx já é usado
