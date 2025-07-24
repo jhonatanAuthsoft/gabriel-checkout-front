@@ -283,7 +283,7 @@ const VendasPainel = () => {
 
         return (
             <div className={`${styles.cardTrend} ${colorClass}`}>
-                <p>
+                <p className={styles.textSpacing}>
                     <span className={styles.cardTrendText}>
                         <Icon /> {Math.abs(value).toFixed(0)}%
                     </span>
@@ -464,8 +464,13 @@ const VendasPainel = () => {
                     <div className={styles.sectionHeader}>
                         <h3 className={styles.sectionTitle}>Total de Vendas por Período</h3>
                         <div className={styles.sectionActions}>
+                            <select className={styles.periodSelect}>
+                            <option>Últimos 6 Meses</option>
+                            <option>Último Ano</option>
+                            <option>Últimos 3 Meses</option>
+                            </select>
                             <button className={`${styles.goButton} ${styles.goBtn1}`}>
-                            <FaArrowRightFromBracket />
+                                <FaExpandAlt />
                             </button>
                         </div>
                     </div>
@@ -496,7 +501,7 @@ const VendasPainel = () => {
                             <tr key={produto.idProduto}>
                                 <td>{String(index + 1).padStart(2, '0')}</td>
                                 <td>{produto.nome}</td>
-                                <td>
+                            <td>
                                     <span className={styles.salesCount}>{produto.totalVendas}</span> /{" "}
                                     <span className={styles.salesPercentage}>{produto.percentualDasVendas.toFixed(2)}%</span>
                             </td>

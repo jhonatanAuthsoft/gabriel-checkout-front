@@ -217,7 +217,6 @@ body.noScroll {
 }
 
 .validIcon::before {
-    content: '';
     width: 6px;
     height: 10px;
     border-right: 2px solid white;

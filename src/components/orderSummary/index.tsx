@@ -4,25 +4,25 @@ import productImg from '../../assets/img/dfCirculo.png';
 import Faq from '../../components/faq';
 
 interface OrderSummaryProps {
-    productName: string;
-    planName: string;
-    totalPrice: number;
+    productName?: string;
+    planName?: string;
+    price: number;
+    couponCode: string;
+    onCouponChange: (value: string) => void;
+    onApplyCoupon: () => void;
     discount: number;
     finalPrice: number;
-    couponCode: string;
-    setCouponCode: (code: string) => void;
-    onApplyCoupon: () => void;
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({
     productName,
     planName,
-    totalPrice,
+    price,
+    couponCode,
+    onCouponChange,
+    onApplyCoupon,
     discount,
     finalPrice,
-    couponCode,
-    setCouponCode,
-    onApplyCoupon
 }) => {
     const formatCurrency = (value: number) => {
         return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -40,8 +40,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                     
                     <div className={styles.productDetails}>
                         <div className={styles.detailsLeft}>
-                            <h3>{productName} - {planName}</h3>
-                            <div className={styles.productPrice}>{formatCurrency(totalPrice)}</div>
+                            <h3>{productName}</h3>
+                            <p>- {planName}</p>
+                            <div className={styles.productPrice}>{formatCurrency(price)}</div>
                         </div>
                     </div>
                 </div>
@@ -53,7 +54,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                             type="text" 
                             placeholder="Insira seu cupom" 
                             value={couponCode}
-                            onChange={(e) => setCouponCode(e.target.value)}
+                            onChange={(e) => onCouponChange(e.target.value)}
                         />
                         <button className={styles.btnApply} onClick={onApplyCoupon}>Aplicar</button>
                     </div>
@@ -62,7 +63,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                 <div className={styles.orderDetails}>
                     <div className={styles.orderRow}>
                         <span>Subtotal</span>
-                        <span>{formatCurrency(totalPrice)}</span>
+                        <span>{formatCurrency(price)}</span>
                     </div>
                     {discount > 0 && (
                     <div className={styles.orderRow}>

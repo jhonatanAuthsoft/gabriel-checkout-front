@@ -482,7 +482,7 @@ input[type="date"].hasValue::-webkit-datetime-edit {
 
 .paginationBtn.active {
     background-color: #007bff;
-    color: #fff;
+    color: #3b3b3b;
     border-color: #007bff;
 }
 
@@ -803,4 +803,118 @@ input[type="date"].hasValue::-webkit-datetime-edit {
     .overlay {
         height: 100vh;
     }
+}
+
+.paginationBtn.active, .paginationBtn:hover {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+
+.paginationEllipsis {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    color: #888;
+}
+
+.exportContainer {
+    position: relative;
+    display: inline-block;
+}
+  
+.btnExport .exportIcon {
+    transition: transform 0.2s ease-in-out;
+}
+  
+.btnExport .rotate {
+    transform: rotate(180deg);
+}
+  
+.exportMenu {
+    position: absolute;
+    top: calc(100% + 5px);
+    left: 0;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    padding: 8px;
+    width: 240px;
+    border: 1px solid #e0e0e0;
+}
+  
+.exportMenuGroup {
+    display: flex;
+    flex-direction: column;
+}
+  
+.exportMenuGroup:not(:last-child) {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #eee;
+}
+  
+.exportMenuTitle {
+    font-weight: bold;
+    color: #333;
+    padding: 8px 12px;
+    font-size: 0.9em;
+    display: block;
+    border-bottom: 1px solid #eee;
+}
+  
+.exportMenu button {
+    background: none;
+    border: none;
+    text-align: left;
+    padding: 10px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+    color: #333;
+    width: 100%;
+    transition: background-color 0.2s ease;
+}
+  
+.exportMenu button:hover {
+    background-color: #f5f5f5;
+}
+
+.rowExportMenu {
+    position: absolute;
+    right: 40px;
+    top: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 100;
+    width: 100px;
+    overflow: hidden;
+}
+.rowExportMenu button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    width: 100%;
+    text-align: left;
+    cursor: pointer;
+    font-size: 0.9em;
+}
+.rowExportMenu button:hover {
+    background-color: #f5f5f5;
+}
+
+.actionCellContainer {
+    position: relative;
+    text-align: right;
 }

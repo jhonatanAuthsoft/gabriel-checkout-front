@@ -22,10 +22,14 @@ interface Cupom {
 
 interface Product {
     id: string;
+    dadosGerais: {
     nome: string;
+    };
     planos: Plan[];
     cupom?: Cupom[];
+    checkoutProduto: {
     urlObrigado?: string;
+    };
 }
 
 const Checkout: React.FC = () => {
@@ -44,6 +48,9 @@ const Checkout: React.FC = () => {
     const [bairro, setBairro] = useState('');
     const [cidade, setCidade] = useState('');
     const [uf, setUf] = useState('');
+
+    const [errors, setErrors] = useState<Record<string, string>>({});
+    const [isFormValid, setIsFormValid] = useState(false);
 
     const [numeroCartao, setNumeroCartao] = useState('');
     const [nomeImpresso, setNomeImpresso] = useState('');
@@ -66,21 +73,59 @@ const Checkout: React.FC = () => {
     const [urlObrigado, setUrlObrigado] = useState<string | null>(null);
 
     const [error, setError] = useState('');
+    const [productLoadError, setProductLoadError] = useState('');
     const navigate = useNavigate();
     const { idProduto, idPlano } = useParams();
 
     useEffect(() => {
+        if (couponCode.trim() === '') {
+            setDiscount(0);
+        }
+    }, [couponCode]);
+
+    useEffect(() => {
+        const validateForm = () => {
+            const newErrors: Record<string, string> = {};
+            if (!nome) newErrors.nome = 'Nome é obrigatório.';
+            if (!email) newErrors.email = 'E-mail é obrigatório.';
+            else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'E-mail inválido.';
+            if (!celular || celular.replace(/\D/g, '').length < 10) newErrors.celular = 'Celular inválido.';
+            if (!cpf || cpf.replace(/\D/g, '').length < 11) newErrors.cpf = 'CPF/CNPJ inválido.';
+            if (!password || password.length < 6) newErrors.password = 'A senha deve ter pelo menos 6 caracteres.';
+            if (!cep || cep.replace(/\D/g, '').length < 8) newErrors.cep = 'CEP inválido.';
+            if (!logradouro) newErrors.logradouro = 'Endereço é obrigatório.';
+            if (!numero) newErrors.numero = 'Número é obrigatório.';
+            if (!bairro) newErrors.bairro = 'Bairro é obrigatório.';
+            if (!cidade) newErrors.cidade = 'Cidade é obrigatória.';
+            if (!uf) newErrors.uf = 'UF é obrigatório.';
+            
+            setErrors(newErrors);
+            setIsFormValid(Object.keys(newErrors).length === 0);
+        };
+        validateForm();
+    }, [nome, email, celular, cpf, password, cep, logradouro, numero, bairro, cidade, uf]);
+
+    useEffect(() => {
         const fetchProductDetails = async () => {
             if (!idProduto || !idPlano) return;
-            setError('');
+            setProductLoadError('');
             const apiUrl = import.meta.env.VITE_API_URL;
             try {
                 const response = await fetch(`${apiUrl}produto/listar-por-id/${idProduto}`);
                 if (!response.ok) {
+                    if (response.status === 404) {
+                        throw new Error('Produto não encontrado.');
+                    }
                     throw new Error('Falha ao buscar detalhes do produto.');
                 }
+                
                 const data = await response.json();
                 const productData = data.dados;
+
+                if (!productData) {
+                    throw new Error('Produto não encontrado ou inativo.');
+                }
+
                 setProduct(productData);
                 setUrlObrigado(productData.checkoutProduto.urlObrigado || null);
                 
@@ -94,13 +139,13 @@ const Checkout: React.FC = () => {
                         setTotalPrice(initialPrice);
                         setFinalPrice(initialPrice);
                     } else {
-                        setError('Plano selecionado não encontrado para este produto.');
+                        throw new Error('Plano selecionado não é válido para este produto.');
                     }
                 } else {
-                    setError('Produto não possui planos disponíveis.');
+                    throw new Error('Este produto não possui planos disponíveis.');
                 }
             } catch (err: any) {
-                setError(err.message);
+                setProductLoadError(err.message);
                 console.error(err);
             }
         };
@@ -148,6 +193,32 @@ const Checkout: React.FC = () => {
     };
 
     const handleNextStep = async () => {
+        if (!isFormValid) {
+            setError('Por favor, preencha todos os campos corretamente.');
+            const newTouched: Record<string, boolean> = {
+                nome: true, email: true, celular: true, cpf: true, password: true,
+                cep: true, logradouro: true, numero: true, bairro: true, cidade: true, uf: true
+            };
+            // This is a trick to trigger validation messages on all fields when trying to proceed
+            // We don't have direct access to RegistrationForm's `touched` state, so we trigger a validation
+            const newErrors: Record<string, string> = {};
+            if (!nome) newErrors.nome = 'Nome é obrigatório.';
+            if (!email) newErrors.email = 'E-mail é obrigatório.';
+            else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'E-mail inválido.';
+            if (!celular || celular.replace(/\D/g, '').length < 10) newErrors.celular = 'Celular inválido.';
+            if (!cpf || cpf.replace(/\D/g, '').length < 11) newErrors.cpf = 'CPF/CNPJ inválido.';
+            if (!password || password.length < 6) newErrors.password = 'A senha deve ter pelo menos 6 caracteres.';
+            if (!cep || cep.replace(/\D/g, '').length < 8) newErrors.cep = 'CEP inválido.';
+            if (!logradouro) newErrors.logradouro = 'Endereço é obrigatório.';
+            if (!numero) newErrors.numero = 'Número é obrigatório.';
+            if (!bairro) newErrors.bairro = 'Bairro é obrigatório.';
+            if (!cidade) newErrors.cidade = 'Cidade é obrigatória.';
+            if (!uf) newErrors.uf = 'UF é obrigatório.';
+            setErrors(newErrors);
+
+            return;
+        }
+
         if (step === 1) {
         setError('');
         const apiUrl = import.meta.env.VITE_API_URL;
@@ -332,6 +403,18 @@ const Checkout: React.FC = () => {
         }
     };
 
+    if (productLoadError) {
+        return (
+            <div className={styles.errorContainer}>
+                <h2>Ocorreu um Erro</h2>
+                <p>{productLoadError}</p>
+                <button onClick={() => navigate('/')}>Voltar para o Início</button>
+            </div>
+        );
+    }
+
+    const selectedPlan = product?.planos.find(p => p.id === selectedPlanoId);
+
     return (
         <div className={styles.mainContainer}>
             <Header />
@@ -353,6 +436,8 @@ const Checkout: React.FC = () => {
                         bairro={bairro} setBairro={setBairro}
                         cidade={cidade} setCidade={setCidade}
                         uf={uf} setUf={setUf}
+                        errors={errors} setErrors={setErrors}
+                        isFormValid={isFormValid}
                     />}
                     {step === 2 && <PaymentForm 
                         paymentMethod={paymentMethod} 
@@ -382,7 +467,11 @@ const Checkout: React.FC = () => {
 
                     {step < 3 && (
                          <div className={styles.formFooter}>
-                            <button onClick={handleNextStep} className={styles.btnPrimary}>
+                            <button 
+                                onClick={handleNextStep} 
+                                className={styles.btnPrimary}
+                                disabled={step === 1 && !isFormValid}
+                            >
                                 {step === 1 ? 'Próximo' : (pixData || boletoData) ? 'Avançar' : 'Finalizar Pagamento'}
                             </button>
                         </div>
@@ -390,13 +479,13 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <OrderSummary
-                        productName={product?.nome || ''}
-                        planName={product?.planos.find(p => p.id === selectedPlanoId)?.nome || ''}
-                        totalPrice={totalPrice}
+                        productName={product?.dadosGerais?.nome || ''}
+                        planName={selectedPlan?.nome || ''}
+                        price={totalPrice}
                         discount={discount}
                         finalPrice={finalPrice}
                         couponCode={couponCode}
-                        setCouponCode={setCouponCode}
+                        onCouponChange={setCouponCode}
                         onApplyCoupon={handleApplyCoupon}
                     />
                 

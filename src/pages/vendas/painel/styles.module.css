@@ -346,6 +346,11 @@
     font-weight: bold;
 }
 
+.textSpacing {
+    display: flex;
+    gap: 3px;
+}
+
 .dataSection {
     display: grid;
     grid-template-columns: 50% 42%;

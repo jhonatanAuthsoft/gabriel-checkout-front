@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './styles.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
+import jwtDecode from 'jwt-decode';
 
 const Login = () => {
     const [passwordVisible, setPasswordVisible] = useState(false);
@@ -42,8 +43,26 @@ const Login = () => {
             });
             if (response.ok) {
                 const data = await response.json();
-                localStorage.setItem('authToken', data.token);
-                navigate('/assinaturas');
+                const token = data.token;
+                localStorage.setItem('authToken', token);
+
+                const decodedToken: any = jwtDecode(token);
+                console.log('Token Decodificado:', decodedToken);
+
+                try {
+                    const response = await fetch(`${apiUrl}usuario/listar-todos/usuarios`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok) {
+                        navigate('/vendas');
+                    } else {
+                        navigate('/assinaturas');
+                    }
+                } catch (e) {
+                    console.error("Erro ao verificar tipo de usuário, redirecionando para assinaturas:", e);
+                    navigate('/assinaturas');
+                }
             } else {
                 const errorData = await response.json().catch(() => ({ message: 'Ocorreu um erro ao tentar fazer login.' }));
                 setError(errorData.message || 'Email ou senha inválidos.');

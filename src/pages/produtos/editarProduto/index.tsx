@@ -70,17 +70,47 @@ const EditarProduto: React.FC = () => {
     const [tipoCobranca, setTipoCobranca] = useState('unica');
     const [primeiraParcela, setPrimeiraParcela] = useState('igual');
     const [editingPlanoIndex, setEditingPlanoIndex] = useState<number | null>(null);
+    const [editingCupomIndex, setEditingCupomIndex] = useState<number | null>(null);
+    const [cupomFilter, setCupomFilter] = useState('');
+    const [codigoRefFilter, setCodigoRefFilter] = useState('');
+    const [filteredCupons, setFilteredCupons] = useState<any[]>([]);
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
+    const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
     const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
-    const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
+    const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '', ativo: true };
     const [newCupom, setNewCupom] = useState(initialCupomState);
 
     const overlayRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        const lowerCupomFilter = cupomFilter.toLowerCase();
+        const lowerCodigoRefFilter = codigoRefFilter.toLowerCase();
+
+        const filtered = (produtoData.cupom || []).filter(cupom => {
+            const cupomCode = (cupom.codigoCupom || '').toLowerCase();
+            const cupomUrl = (cupom.url || '').toLowerCase();
+
+            let matchesCupomFilter = true;
+            if (lowerCupomFilter) {
+                matchesCupomFilter = cupomCode.includes(lowerCupomFilter);
+            }
+
+            let matchesCodigoRefFilter = true;
+            if (lowerCodigoRefFilter) {
+                matchesCodigoRefFilter = cupomCode.includes(lowerCodigoRefFilter) || cupomUrl.includes(lowerCodigoRefFilter);
+            }
+            
+            return matchesCupomFilter && matchesCodigoRefFilter;
+        });
+
+        setFilteredCupons(filtered);
+    }, [cupomFilter, codigoRefFilter, produtoData.cupom]);
 
     useEffect(() => {
         const fetchProductData = async () => {
@@ -184,7 +214,39 @@ const EditarProduto: React.FC = () => {
         });
     };
 
+    const validateProductData = () => {
+        const errors: string[] = [];
+        const { dadosGerais, formatoCategoria, cobranca, suporteGarantia, urlPersonalizada } = produtoData.dadosProduto;
+
+        if (!dadosGerais.nome.trim()) {
+            errors.push('dadosGerais');
+        }
+        if (!formatoCategoria.formato || !formatoCategoria.categoria) {
+            errors.push('formatoCategoria');
+        }
+        if (!cobranca.gratis && cobranca.preco <= 0) {
+            errors.push('cobranca');
+        }
+        if (!suporteGarantia.email.trim()) {
+            errors.push('suporteGarantia');
+        }
+        if (!urlPersonalizada.trim()) {
+            errors.push('urlsPersonalizadas');
+        }
+        // Na edição, as imagens podem já existir, então não validamos se a lista de novas imagens está vazia
+        // A lógica de validação para imagens existentes (se aplicável) deve ser adicionada aqui
+
+        setValidationErrors(errors);
+        return errors.length === 0;
+    };
+
     const handleSave = async () => {
+        setHasAttemptedSave(true);
+        if (!validateProductData()) {
+            console.log('Validação falhou', validationErrors);
+            return;
+        }
+
         const formData = new FormData();
         
         const dadosPayload = {
@@ -423,6 +485,23 @@ const EditarProduto: React.FC = () => {
         }));
     };
 
+    const handleEditCupom = (index: number) => {
+        setEditingCupomIndex(index);
+        setNewCupom(produtoData.cupom[index]);
+        setShowCupomForm(true);
+    };
+
+    const handleSaveCupom = () => {
+        if (editingCupomIndex !== null) {
+            handleUpdateCupom(editingCupomIndex, newCupom);
+        } else {
+            handleAddCupom(newCupom);
+        }
+        setNewCupom(initialCupomState);
+        setShowCupomForm(false);
+        setEditingCupomIndex(null);
+    };
+
     const handleAddCupom = (novoCupom: any) => {
         setProdutoData(prev => ({
             ...prev,
@@ -447,6 +526,41 @@ const EditarProduto: React.FC = () => {
             ...prev,
             cupom: prev.cupom.filter((_, i) => i !== index)
         }));
+    };
+
+    const handleFilterCupons = () => {
+        let tempCupons = [...produtoData.cupom];
+        const cupomFilterLower = cupomFilter.toLowerCase();
+        const codigoRefFilterLower = codigoRefFilter.toLowerCase();
+    
+        if (cupomFilterLower) {
+            tempCupons = tempCupons.filter(c => 
+                c.codigoCupom && c.codigoCupom.toLowerCase().includes(cupomFilterLower)
+            );
+        }
+    
+        if (codigoRefFilterLower) {
+            tempCupons = tempCupons.filter(c => 
+                (c.codigoCupom && c.codigoCupom.toLowerCase().includes(codigoRefFilterLower)) ||
+                (c.url && c.url.toLowerCase().includes(codigoRefFilterLower))
+            );
+        }
+    
+        setFilteredCupons(tempCupons);
+    };
+
+    const handleToggleCupomAtivo = (index: number) => {
+        setProdutoData(prev => {
+            const novosCupons = [...prev.cupom];
+            novosCupons[index] = {
+                ...novosCupons[index],
+                ativo: !novosCupons[index].ativo
+            };
+            return {
+                ...prev,
+                cupom: novosCupons
+            };
+        });
     };
 
     return (
@@ -489,7 +603,7 @@ const EditarProduto: React.FC = () => {
                         <a href="/produtos">
                             <div className={`${styles.subMenuItem} ${styles.active}`}>Meus Produtos</div>
                         </a>
-                        <a href="#">
+                        <a href="/produtos/novo">
                             <div className={styles.subMenuItem}>Novo Produto</div>
                         </a>
                     </div>
@@ -531,9 +645,9 @@ const EditarProduto: React.FC = () => {
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Dados Gerais</h2>
-                                    <FaCheckCircle className={styles.checkIcon} />
+                                    {hasAttemptedSave && !validationErrors.includes('dadosGerais') && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
-                                <div className={styles.contentCardBody}>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('dadosGerais') ? styles.missing : ''}`}>
                                     <div className={styles.dataSection}>
                                         <div className={styles.dataCol1}>
                                             <div className={styles.inputGroup}>
@@ -572,14 +686,15 @@ const EditarProduto: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {hasAttemptedSave && validationErrors.includes('dadosGerais') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Formato e Categoria</h2>
+                                    {hasAttemptedSave && !validationErrors.includes('formatoCategoria') && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
-                                <div className={`${styles.contentCardBody} ${styles.missing}`}>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('formatoCategoria') ? styles.missing : ''}`}>
                                     <div className={styles.dataSection}>
                                         <div className={styles.dataCol3}>
                                             <div className={styles.selectWrapper}>
@@ -615,15 +730,15 @@ const EditarProduto: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {hasAttemptedSave && validationErrors.includes('formatoCategoria') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Cobrança</h2>
-                                    <FaCheckCircle className={styles.checkIcon} />
+                                    {hasAttemptedSave && !validationErrors.includes('cobranca') && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
-                                <div className={styles.contentCardBody}>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('cobranca') ? styles.missing : ''}`}>
                                     <div className={styles.dataSection}>
                                         <div className={`${styles.dataCol3}`}>
                                             <div className={styles.radioSection}>
@@ -750,7 +865,7 @@ const EditarProduto: React.FC = () => {
                                             </>
                                         )}
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {hasAttemptedSave && validationErrors.includes('cobranca') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
@@ -834,8 +949,9 @@ const EditarProduto: React.FC = () => {
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Suporte e Garantia</h2>
+                                    {hasAttemptedSave && !validationErrors.includes('suporteGarantia') && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
-                                <div className={styles.contentCardBody}>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('suporteGarantia') ? styles.missing : ''}`}>
                                     <div className={styles.dataSection}>
                                         <div className={styles.dataCol5}>
                                             <div className={styles.inputGroup}>
@@ -1012,14 +1128,15 @@ const EditarProduto: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {hasAttemptedSave && validationErrors.includes('suporteGarantia') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>URL's Personalizadas</h2>
+                                    {hasAttemptedSave && !validationErrors.includes('urlsPersonalizadas') && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
-                                <div className={styles.contentCardBody}>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('urlsPersonalizadas') ? styles.missing : ''}`}>
                                     <div className={styles.dataSection}>
                                         <div className={styles.dataCol}>
                                             <div className={styles.radioSection}>
@@ -1070,12 +1187,13 @@ const EditarProduto: React.FC = () => {
                                             </div>
                                         </div>
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {hasAttemptedSave && validationErrors.includes('urlsPersonalizadas') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Fotos</h2>
+                                    <FaCheckCircle className={styles.checkIcon} />
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.selectDocs}>
@@ -1096,7 +1214,7 @@ const EditarProduto: React.FC = () => {
                             </div>
                             <div className={styles.paginationContainer}>
                                 <div className={styles.paginationControls}>
-                                    <button className={`${styles.paginationBtn} ${styles.btnCancel}`}>Cancelar</button>
+                                    <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => navigate('/produtos/')}>Cancelar</button>
                                     <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave}>Salvar</button>
                                 </div>
                             </div>
@@ -1178,44 +1296,47 @@ const EditarProduto: React.FC = () => {
                                         </div>
                                         <p className={styles.sliderText}>FAQ</p>
                                     </div>
-                                    {produtoData.checkoutProduto.exibicoes.exibirFaq && (
-                                        <React.Fragment>
-                                            {produtoData.checkoutProduto.perguntas.map((item, index) => (
-                                                <div key={item.id || index} className={styles.dataCol8} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
-                                                    <div className={styles.dataCol}>
-                                                        <div className={styles.inputGroup}>
-                                                            <label className={styles.label}>Pergunta</label>
-                                                            <input 
-                                                                type="text" 
-                                                                className={styles.input} 
-                                                                value={item.pergunta} 
-                                                                onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.dataCol}>
-                                                        <div className={styles.inputGroup}>
-                                                            <label className={styles.label}>Resposta</label>
-                                                            <input
-                                                                type="text"
-                                                                className={styles.input}
-                                                                value={item.resposta}
-                                                                onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                            <div className={styles.faqActions}>
-                                                <button className={styles.btnAddFaq} onClick={handleAddPergunta}><FaPlus /></button>
-                                            </div>
-                                        </React.Fragment>
-                                    )}
                                 </div>
                             </div>
+                            {produtoData.checkoutProduto.exibicoes.exibirFaq && (
+                                <div className={styles.contentCard}>
+                                    <div className={styles.contentCardHeader}>
+                                        <h2 className={styles.contentCardTitle}>Perguntas e Respostas (FAQ)</h2>
+                                        <button className={styles.btnAddFaq} onClick={handleAddPergunta}><FaPlus /></button>
+                                    </div>
+                                    <div className={styles.contentCardBody}>
+                                        {produtoData.checkoutProduto.perguntas.map((item, index) => (
+                                            <div key={item.id || index} className={styles.dataCol8} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
+                                                <div className={styles.dataCol}>
+                                                    <div className={styles.inputGroup}>
+                                                        <label className={styles.label}>Pergunta</label>
+                                                        <input 
+                                                            type="text" 
+                                                            className={styles.input} 
+                                                            value={item.pergunta} 
+                                                            onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <div className={styles.dataCol}>
+                                                    <div className={styles.inputGroup}>
+                                                        <label className={styles.label}>Resposta</label>
+                                                        <input
+                                                            type="text"
+                                                            className={styles.input}
+                                                            value={item.resposta}
+                                                            onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                             <div className={styles.paginationContainer}>
                                 <div className={styles.paginationControls}>
-                                    <button className={`${styles.paginationBtn} ${styles.btnCancel}`}>Cancelar</button>
+                                    <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => navigate('/produtos/')}>Cancelar</button>
                                     <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave}>Salvar</button>
                                 </div>
                             </div>
@@ -1409,11 +1530,22 @@ const EditarProduto: React.FC = () => {
                                                                     <td>{plano.peridiocidade}</td>
                                                                 <td>
                                                                     <div className={styles.urlCheckoutContainer}>
-                                                                            <input id={`urlCheckout${index}`} type="text" className={styles.urlCheckoutInput} defaultValue="http://checkout.url/1" readOnly />
-                                                                            <button className={`${styles.btnCopyUrl} ${copiedUrlStatuses[`urlCheckout${index}`] ? styles.copied : ''}`} title="Copiar URL" onClick={() => handleCopyUrl(`urlCheckout${index}`)}>
+                                                                            <input
+                                                                                id={`urlCheckout${index}`}
+                                                                                type="text"
+                                                                                className={styles.urlCheckoutInput}
+                                                                                value={plano.id ? `${window.location.origin}/checkout/${produtoId}/${plano.id}` : 'URL disponível após salvar'}
+                                                                                readOnly
+                                                                            />
+                                                                            <button
+                                                                                className={`${styles.btnCopyUrl} ${copiedUrlStatuses[`urlCheckout${index}`] ? styles.copied : ''}`}
+                                                                                title="Copiar URL"
+                                                                                onClick={() => handleCopyUrl(`urlCheckout${index}`)}
+                                                                                disabled={!plano.id}
+                                                                            >
                                                                                 {copiedUrlStatuses[`urlCheckout${index}`] ? <FaCheck /> : <FaCopy />}
-                                                                        </button>
-                                            </div>
+                                                                            </button>
+                                                                    </div>
                                                                 </td>
                                                                 <td style={{ width: 51 }}>
                                                                     <div className={styles.switchContainer}>
@@ -1501,7 +1633,15 @@ const EditarProduto: React.FC = () => {
                                     </div>
                                             </div>
                             )}
-                                        </div>
+                            {!showPlanoForm && (
+                                <div className={styles.paginationContainer}>
+                                    <div className={styles.paginationControls}>
+                                        <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => navigate('/produtos/')}>Cancelar</button>
+                                        <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave}>Salvar</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
                     
                     {activeSection === 'cupom' && (
@@ -1584,13 +1724,26 @@ const EditarProduto: React.FC = () => {
                                     <div className={styles.contentCard}>
                                         <div className={styles.contentCardHeaderCupom}>
                                             <div className={styles.filterContainer}>
-                                                <input type="text" placeholder="Cupom" className={styles.filterInput} />
-                                                <input type="text" placeholder="Código/Referência" className={styles.filterInput} />
-                                                <button className={styles.filterInputBtn}>
-                                                    <FaSearch /> Filtrar
-                                                </button>
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Cupom" 
+                                                    className={styles.filterInput} 
+                                                    value={cupomFilter}
+                                                    onChange={e => setCupomFilter(e.target.value)}
+                                                />
+                                                <input 
+                                                    type="text" 
+                                                    placeholder="Código/Referência" 
+                                                    className={styles.filterInput}
+                                                    value={codigoRefFilter}
+                                                    onChange={e => setCodigoRefFilter(e.target.value)}
+                                                />
                                             </div>
-                                            <button className={styles.paginationBtn2} onClick={() => setShowCupomForm(true)}>Novo Cupom</button>
+                                            <button className={styles.paginationBtn2} onClick={() => {
+                                                setEditingCupomIndex(null);
+                                                setNewCupom(initialCupomState);
+                                                setShowCupomForm(true);
+                                            }}>Novo Cupom</button>
                                     </div>
                                     <div className={styles.dataSection}>
                                             <div className={styles.tableContainer}>
@@ -1609,8 +1762,10 @@ const EditarProduto: React.FC = () => {
                                                             </tr>
                                                         </thead>
                                                         <tbody>
-                                                            {produtoData.cupom.map((cupom, index) => (
-                                                                <tr key={cupom.id || index}>
+                                                            {filteredCupons.map((cupom, index) => {
+                                                                const originalIndex = produtoData.cupom.findIndex(c => c === cupom);
+                                                                return (
+                                                                <tr key={cupom.id || originalIndex}>
                                                                     <td>{cupom.codigoCupom}</td>
                                                                 <td>
                                                                     <a
@@ -1630,28 +1785,30 @@ const EditarProduto: React.FC = () => {
                                                                         <input
                                                                             type="checkbox"
                                                                             className={styles.slideCheckbox}
-                                                                            id="cupomAtivo1"
+                                                                            id={`cupomAtivo${originalIndex}`}
+                                                                            checked={cupom.ativo}
+                                                                            onChange={() => handleToggleCupomAtivo(originalIndex)}
                                                                         />
                                                                         <label
                                                                             className={styles.slideSwitch}
-                                                                            htmlFor="cupomAtivo1"
+                                                                            htmlFor={`cupomAtivo${originalIndex}`}
                                                                         >
                                                                             <span className={styles.sliderSwitch} />
-                                                </label>
-                                            </div>
+                                                                        </label>
+                                                                    </div>
                                                                 </td>
                                                                 <td>
                                                                     <div className={styles.btnActions}>
-                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`}>
+                                                                        <button className={`${styles.btnAction} ${styles.btnEdit}`} onClick={() => handleEditCupom(originalIndex)}>
                                                                         <FaPencilAlt />
                                                                     </button>
-                                                                            <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemoveCupom(index)}>
+                                                                            <button className={`${styles.btnAction} ${styles.btnDelete}`} onClick={() => handleRemoveCupom(originalIndex)}>
                                                                         <FaTrashAlt />
                                                                     </button>
-                                        </div>
+                                                                    </div>
                                                                 </td>
                                                             </tr>
-                                                            ))}
+                                                            )})}
                                                         </tbody>
                                                     </table>
                                             </div>
@@ -1660,12 +1817,20 @@ const EditarProduto: React.FC = () => {
                                             </div>
                                         </div>
                             )}
-                                            </div>
+                            {!showCupomForm && (
+                                <div className={styles.paginationContainer}>
+                                    <div className={styles.paginationControls}>
+                                        <button className={`${styles.paginationBtn} ${styles.btnCancel}`} onClick={() => navigate('/produtos/')}>Cancelar</button>
+                                        <button className={`${styles.paginationBtn} ${styles.btnSave}`} onClick={handleSave}>Salvar</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
                     )}
 
-                                        </div>
+                </div>
             </main>
-                                    </div>
+        </div>
     );
 };
 

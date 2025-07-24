@@ -225,7 +225,7 @@ const ConfiguracoesGerais: React.FC = () => {
 
                 <div className={styles.contentCard} style={{ marginTop: '20px' }}>
                      <div className={styles.contentCardHeader}>
-                        <h3 className={styles.contentCardTitle}>Webhooks Cadastrados</h3>
+                        <h3 className={styles.contentCardTitle}>Webhook Cadastrado</h3>
                     </div>
                     <div className={styles.contentCardBody}>
                         <div className={styles.tableContainer}>

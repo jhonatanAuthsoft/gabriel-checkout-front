@@ -50,6 +50,7 @@ const Usuarios: React.FC = () => {
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [newUser, setNewUser] = useState(initialUserState);
+    const [editingUser, setEditingUser] = useState<Usuario | null>(null);
 
     useEffect(() => {
         const fetchUsuarios = async () => {
@@ -110,23 +111,27 @@ const Usuarios: React.FC = () => {
         );
     };
 
-    const handleNewUserInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
+        const stateToUpdate = editingUser ? setEditingUser : setNewUser;
+
+        stateToUpdate((prev: any) => {
         if (name.startsWith('endereco.')) {
             const field = name.split('.')[1];
-            setNewUser(prev => ({
+                return {
                 ...prev,
                 endereco: {
                     ...prev.endereco,
                     [field]: value,
                 },
-            }));
+                };
         } else {
-            setNewUser(prev => ({ ...prev, [name]: value }));
+                return { ...prev, [name]: value };
         }
+        });
     };
 
-    const handleSaveNewUser = async () => {
+    const handleSaveUser = async () => {
         const token = localStorage.getItem('authToken');
         const apiUrl = import.meta.env.VITE_API_URL;
         if (!token || !apiUrl) {
@@ -134,26 +139,37 @@ const Usuarios: React.FC = () => {
             return;
         }
 
-        const { nome, email, senha, permissao, cpf, celular, endereco } = newUser;
+        const userToSave = editingUser || newUser;
+        const { nome, email, permissao, cpf, celular, endereco } = userToSave as any;
+        const senha = (userToSave as any).senha;
 
-        if (!nome || !email || !senha) {
-            alert('Nome, e-mail e senha são obrigatórios.');
+        if (!nome || !email) {
+            alert('Nome e e-mail são obrigatórios.');
             return;
         }
 
-        const payload: any = { nome, email, senha, permissao };
+        if (!editingUser && !senha) {
+            alert('A senha é obrigatória para novos usuários.');
+            return;
+        }
 
+        const payload: any = { nome, email, permissao };
+
+        if (senha) payload.senha = senha;
         if (cpf) payload.cpf = cpf;
         if (celular) payload.celular = celular;
 
-        const hasAddressInfo = Object.values(endereco).some(field => field.trim() !== '');
+        const hasAddressInfo = endereco && Object.values(endereco).some(field => typeof field === 'string' && field.trim() !== '');
         if (hasAddressInfo) {
             payload.endereco = endereco;
         }
 
+        const url = editingUser ? `${apiUrl}usuario/atualizar/${editingUser.id}` : `${apiUrl}usuario/cadastrar`;
+        const method = editingUser ? 'PATCH' : 'POST';
+
         try {
-            const response = await fetch(`${apiUrl}usuario/cadastrar`, {
-                method: 'POST',
+            const response = await fetch(url, {
+                method: method,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
@@ -162,17 +178,29 @@ const Usuarios: React.FC = () => {
             });
 
             if (response.ok) {
-                alert('Usuário criado com sucesso!');
+                alert(`Usuário ${editingUser ? 'atualizado' : 'criado'} com sucesso!`);
                 setNewUser(initialUserState);
+                setEditingUser(null);
                 setView('table');
             } else {
                 const errorData = await response.json();
-                alert(`Falha ao criar usuário: ${errorData.message || 'Erro desconhecido'}`);
+                alert(`Falha ao ${editingUser ? 'atualizar' : 'criar'} usuário: ${errorData.message || 'Erro desconhecido'}`);
             }
         } catch (error) {
-            console.error('Erro ao criar usuário:', error);
+            console.error(`Erro ao ${editingUser ? 'atualizar' : 'criar'} usuário:`, error);
             alert('Erro ao conectar com o servidor.');
         }
+    };
+
+    const handleEditClick = (usuario: Usuario) => {
+        setEditingUser(usuario);
+        setView('form');
+    };
+
+    const handleCancel = () => {
+        setView('table');
+        setNewUser(initialUserState);
+        setEditingUser(null);
     };
 
     const handleToggleActive = (id: number) => {
@@ -325,7 +353,7 @@ const Usuarios: React.FC = () => {
                                                 </td>
                                                 <td className={styles.btnActions}>
                                                     <div className={styles.actionsBtn}>
-                                                        <button className={styles.btnEdit}>
+                                                        <button className={styles.btnEdit} onClick={() => handleEditClick(user)}>
                                                             <FaPencilAlt />
                                                         </button>
                                                         <button className={styles.btnDelete}>
@@ -369,7 +397,7 @@ const Usuarios: React.FC = () => {
                     <div id="novoUsuarioView">
                         <div className={styles.contentCard}>
                             <div className={styles.contentCardHeader}>
-                                <h2 className={styles.contentCardTitle}>Novo Usuário</h2>
+                                <h2 className={styles.contentCardTitle}>{editingUser ? 'Editar Usuário' : 'Novo Usuário'}</h2>
                             </div>
                             <div className={styles.contentCardBody}>
                                 <div className={styles.dataSection}>
@@ -378,7 +406,7 @@ const Usuarios: React.FC = () => {
                                             <label className={styles.label} htmlFor="nome">
                                                 Nome do Usuário
                                             </label>
-                                            <input type="text" name="nome" className={styles.input} value={newUser.nome} onChange={handleNewUserInputChange} />
+                                            <input type="text" name="nome" className={styles.input} value={editingUser?.nome || newUser.nome} onChange={handleInputChange} />
                                         </div>
                                     </div>
                                     <div className={styles.dataCol6}>
@@ -386,7 +414,7 @@ const Usuarios: React.FC = () => {
                                             <label className={styles.label} htmlFor="email">
                                                 E-mail
                                             </label>
-                                            <input type="email" name="email" className={styles.input} value={newUser.email} onChange={handleNewUserInputChange} />
+                                            <input type="email" name="email" className={styles.input} value={editingUser?.email || newUser.email} onChange={handleInputChange} />
                                         </div>
                                     </div>
                                     <div className={styles.dataCol6}>
@@ -394,7 +422,7 @@ const Usuarios: React.FC = () => {
                                             <label className={styles.label} htmlFor="senha">
                                                 Senha
                                             </label>
-                                            <input type="password" name="senha" className={styles.input} value={newUser.senha} onChange={handleNewUserInputChange} />
+                                            <input type="password" name="senha" className={styles.input} value={(editingUser as any)?.senha || newUser.senha} onChange={handleInputChange} />
                                         </div>
                                     </div>
                                     <div className={styles.dataCol6}>
@@ -403,7 +431,7 @@ const Usuarios: React.FC = () => {
                                                 Perfil
                                             </label>
                                             <div className={styles.selectWrapper}>
-                                                <select name="permissao" className={styles.filterSelect} value={newUser.permissao} onChange={handleNewUserInputChange}>
+                                                <select name="permissao" className={styles.filterSelect} value={editingUser?.permissao || newUser.permissao} onChange={handleInputChange}>
                                                     <option value="FUNCIONARIO">Funcionário</option>
                                                     <option value="ADMIN">Administrador</option>
                                                 </select>
@@ -414,13 +442,13 @@ const Usuarios: React.FC = () => {
                                     <div className={styles.dataCol6}>
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label} htmlFor="cpf">CPF (Opcional)</label>
-                                            <input type="text" name="cpf" className={styles.input} value={newUser.cpf} onChange={handleNewUserInputChange} />
+                                            <input type="text" name="cpf" className={styles.input} value={editingUser?.cpf || newUser.cpf} onChange={handleInputChange} />
                                         </div>
                                     </div>
                                     <div className={styles.dataCol6}>
                                         <div className={styles.inputGroup}>
                                             <label className={styles.label} htmlFor="celular">Celular (Opcional)</label>
-                                            <input type="text" name="celular" className={styles.input} value={newUser.celular} onChange={handleNewUserInputChange} />
+                                            <input type="text" name="celular" className={styles.input} value={editingUser?.celular || newUser.celular} onChange={handleInputChange} />
                                         </div>
                                     </div>
                                 </div>
@@ -431,43 +459,43 @@ const Usuarios: React.FC = () => {
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.cep">CEP</label>
-                                                <input type="text" name="endereco.cep" className={styles.input} value={newUser.endereco.cep} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.cep" className={styles.input} value={editingUser?.endereco?.cep || newUser.endereco.cep} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.endereco">Endereço</label>
-                                                <input type="text" name="endereco.endereco" className={styles.input} value={newUser.endereco.endereco} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.endereco" className={styles.input} value={editingUser?.endereco?.endereco || newUser.endereco.endereco} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.numeroResidencia">Número</label>
-                                                <input type="text" name="endereco.numeroResidencia" className={styles.input} value={newUser.endereco.numeroResidencia} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.numeroResidencia" className={styles.input} value={editingUser?.endereco?.numeroResidencia || newUser.endereco.numeroResidencia} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.complementoEndereco">Complemento</label>
-                                                <input type="text" name="endereco.complementoEndereco" className={styles.input} value={newUser.endereco.complementoEndereco} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.complementoEndereco" className={styles.input} value={editingUser?.endereco?.complementoEndereco || newUser.endereco.complementoEndereco} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.bairro">Bairro</label>
-                                                <input type="text" name="endereco.bairro" className={styles.input} value={newUser.endereco.bairro} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.bairro" className={styles.input} value={editingUser?.endereco?.bairro || newUser.endereco.bairro} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.cidade">Cidade</label>
-                                                <input type="text" name="endereco.cidade" className={styles.input} value={newUser.endereco.cidade} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.cidade" className={styles.input} value={editingUser?.endereco?.cidade || newUser.endereco.cidade} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                         <div className={styles.dataCol6}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="endereco.uf">UF</label>
-                                                <input type="text" name="endereco.uf" className={styles.input} value={newUser.endereco.uf} onChange={handleNewUserInputChange} />
+                                                <input type="text" name="endereco.uf" className={styles.input} value={editingUser?.endereco?.uf || newUser.endereco.uf} onChange={handleInputChange} />
                                             </div>
                                         </div>
                                     </div>
@@ -479,14 +507,14 @@ const Usuarios: React.FC = () => {
                                 <button
                                     id="btnCancelarUsuario"
                                     className={`${styles.paginationBtnInside} ${styles.btnCancelarUsuario}`}
-                                    onClick={() => setView('table')}
+                                    onClick={handleCancel}
                                 >
                                     Cancelar
                                 </button>
                                 <button
                                     id="btnSalvarUsuario"
                                     className={`${styles.paginationBtnInside} ${styles.btnSalvarUsuario}`}
-                                    onClick={handleSaveNewUser}
+                                    onClick={handleSaveUser}
                                 >
                                     Salvar
                                 </button>
