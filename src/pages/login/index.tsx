@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import './styles.css';
 import { FaEye, FaEyeSlash } from 'react-icons/fa';
-import jwtDecode from 'jwt-decode';
 import logo from '../../assets/img/df.png';
 
 const Login = () => {
@@ -47,21 +46,12 @@ const Login = () => {
                 const token = data.token;
                 localStorage.setItem('authToken', token);
 
-                const decodedToken: any = jwtDecode(token);
-                console.log('Token Decodificado:', decodedToken);
+                // A permissão do usuário vem diretamente na resposta do login.
+                const userPermission = data.usuarioRespose.permissao;
 
-                try {
-                    const response = await fetch(`${apiUrl}usuario/listar-todos/usuarios`, {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-
-                    if (response.ok) {
-                        navigate('/vendas');
-                    } else {
-                        navigate('/assinaturas');
-                    }
-                } catch (e) {
-                    console.error("Erro ao verificar tipo de usuário, redirecionando para assinaturas:", e);
+                if (userPermission === 'ADMIN' || userPermission === 'FUNCIONARIO') {
+                    navigate('/vendas');
+                } else {
                     navigate('/assinaturas');
                 }
             } else {
@@ -135,7 +125,7 @@ const Login = () => {
                         </div>
                         {error && <p className="error-message">{error}</p>}
                         <button type="submit">ENTRAR</button>
-                        <a href="#" className="forgotPass">Esqueci Minha Senha</a>
+                        <Link to="/esqueci-senha" className="forgotPass">Esqueci Minha Senha</Link>
                     </form>
                 </div>
             </div>

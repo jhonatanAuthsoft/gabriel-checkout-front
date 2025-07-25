@@ -124,6 +124,7 @@
 
 .navItem span {
     font-size: 15px;
+    margin-left: 8px;
 }
 
 .navItem .expandIcon {
@@ -506,12 +507,76 @@ input[type="date"].has-value::-webkit-datetime-edit {
     border: none;
 }
 
+.exportInputBtn {
+    background-color: #fff;
+    color: #333;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 10px 15px;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: background-color 0.2s, border-color 0.2s;
+    position: relative;
+}
+
+.exportInputBtn:hover {
+    background-color: #000000;
+}
+
+.exportContainer {
+    position: relative;
+}
+
+.exportMenu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    z-index: 10;
+    padding: 5px;
+    display: flex;
+    flex-direction: column;
+}
+
+.exportMenu button {
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    width: 100%;
+    border-radius: 3px;
+}
+
+.exportMenu button:hover {
+    background-color: #f0f0f0;
+}
+
+.exportIcon {
+    transition: transform 0.3s;
+}
+
+.exportIcon.rotate {
+    transform: rotate(180deg);
+}
+
 .tableContainer {
     background-color: #fff;
     border-radius: 10px;
     padding: 0;
     margin-bottom: 20px;
     overflow: hidden;
+    overflow-x: auto;
+    margin-top: 20px;
 }
 
 .tableResponsive {

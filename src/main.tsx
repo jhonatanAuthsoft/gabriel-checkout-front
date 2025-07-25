@@ -13,11 +13,16 @@ import Usuarios from './pages/configuracoes/usuarios';
 import Assinaturas from './pages/checkout/assinaturas';
 import Checkout from './pages/checkout';
 import ConfiguracoesGerais from './pages/configuracoes/geral';
+import EsqueciSenha from './pages/esqueciSenha';
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <Login />,
+  },
+  {
+    path: '/esqueci-senha',
+    element: <EsqueciSenha />,
   },
   {
     path: '/produtos',

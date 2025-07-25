@@ -10,6 +10,11 @@ const EditarProduto: React.FC = () => {
     const { produtoId } = useParams<{ produtoId: string }>();
     const navigate = useNavigate();
 
+    const handleLogout = () => {
+        localStorage.removeItem('authToken');
+        navigate('/');
+    };
+
     const [produtoData, setProdutoData] = useState({
         dadosProduto: {
             dadosGerais: {
@@ -77,11 +82,32 @@ const EditarProduto: React.FC = () => {
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
+    useEffect(() => {
+        if (produtoData.dadosProduto.cobranca.gratis) {
+            setProdutoData(prev => ({
+                ...prev,
+                dadosProduto: {
+                    ...prev.dadosProduto,
+                    cobranca: {
+                        ...prev.dadosProduto.cobranca,
+                        preco: 0
+                    }
+                }
+            }));
+        }
+    }, [produtoData.dadosProduto.cobranca.gratis]);
+
     const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
     const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
     const [newCupom, setNewCupom] = useState(initialCupomState);
+
+    useEffect(() => {
+        if (newCupom.tipoDesconto === 'PERCENTUAL' && newCupom.valor > 100) {
+            setNewCupom(c => ({ ...c, valor: 100 }));
+        }
+    }, [newCupom.tipoDesconto]);
 
     const overlayRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLElement>(null);
@@ -151,14 +177,14 @@ const EditarProduto: React.FC = () => {
         if (!sidebar || !overlay) return;
 
         if (isSidebarActive) {
-            sidebar.classList.add('active');
-            overlay.classList.add('active');
+            sidebar.classList.add(styles.active);
+            overlay.classList.add(styles.active);
             overlay.style.pointerEvents = 'auto';
         } else {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
+            sidebar.classList.remove(styles.active);
+            overlay.classList.remove(styles.active);
             const timer = setTimeout(() => {
-                if (!sidebar.classList.contains('active')) {
+                if (!sidebar.classList.contains(styles.active)) {
                     overlay.style.pointerEvents = 'none';
                 }
             }, 300);
@@ -166,7 +192,8 @@ const EditarProduto: React.FC = () => {
         }
     }, [isSidebarActive]);
 
-    const toggleSidebar = () => {
+    const toggleSidebar = (e: React.MouseEvent) => {
+        e.preventDefault();
         setSidebarActive(prev => !prev);
     };
 
@@ -188,16 +215,48 @@ const EditarProduto: React.FC = () => {
         ref.current?.click();
     };
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, inputName: string) => {
+        const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, inputName: string) => {
         if (event.target.files && event.target.files.length > 0) {
             const files = Array.from(event.target.files);
+
+            for (const file of files) {
+                if (file.size > 5 * 1024 * 1024) { // 5MB
+                    alert(`O arquivo ${file.name} excede o tamanho máximo de 5MB.`);
+                    event.target.value = '';
+                    return;
+                }
+            }
+
             const newMapeamento = files.map(file => ({
                 nomeArquivo: file.name,
                 tipo: inputName.toUpperCase()
             }));
 
-            setImagens(prev => [...prev, ...files]);
-            setMapeamentoImagens(prev => [...prev, ...newMapeamento]);
+            if (inputName === 'banner') {
+                const otherImages = imagens.filter((_, index) => mapeamentoImagens[index].tipo !== 'BANNER');
+                const otherMapeamentos = mapeamentoImagens.filter(m => m.tipo !== 'BANNER');
+                setImagens([...otherImages, ...files]);
+                setMapeamentoImagens([...otherMapeamentos, ...newMapeamento]);
+            } else {
+                setImagens(prev => [...prev, ...files]);
+                setMapeamentoImagens(prev => [...prev, ...newMapeamento]);
+            }
+        }
+    };
+
+    const handleRemoveFile = (fileNameToRemove: string, type: 'PRODUTO' | 'BANNER') => {
+        const fileIndexToRemove = mapeamentoImagens.findIndex(
+            m => m.nomeArquivo === fileNameToRemove && m.tipo === type
+        );
+
+        if (fileIndexToRemove > -1) {
+            const newImagens = [...imagens];
+            newImagens.splice(fileIndexToRemove, 1);
+            setImagens(newImagens);
+
+            const newMapeamentoImagens = [...mapeamentoImagens];
+            newMapeamentoImagens.splice(fileIndexToRemove, 1);
+            setMapeamentoImagens(newMapeamentoImagens);
         }
     };
 
@@ -233,8 +292,6 @@ const EditarProduto: React.FC = () => {
         if (!urlPersonalizada.trim()) {
             errors.push('urlsPersonalizadas');
         }
-        // Na edição, as imagens podem já existir, então não validamos se a lista de novas imagens está vazia
-        // A lógica de validação para imagens existentes (se aplicável) deve ser adicionada aqui
 
         setValidationErrors(errors);
         return errors.length === 0;
@@ -274,7 +331,6 @@ const EditarProduto: React.FC = () => {
             return;
         }
 
-        // Para edição, sempre usaremos o endpoint de editar
         const url = `${apiUrl}produto/editar-produto/${produtoId}`;
         const method = 'PATCH';
 
@@ -787,7 +843,7 @@ const EditarProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="preco">
                                                     Preço
                                                 </label>
-                                                <input type="number" name="dadosProduto.cobranca.preco" placeholder="0,00" className={styles.input} value={produtoData.dadosProduto.cobranca.preco} onChange={(e) => handleInputChange(e.target.name, parseFloat(e.target.value))} />
+                                                <input type="number" name="dadosProduto.cobranca.preco" placeholder="0,00" className={styles.input} value={produtoData.dadosProduto.cobranca.preco} onChange={(e) => handleInputChange(e.target.name, parseFloat(e.target.value))} disabled={produtoData.dadosProduto.cobranca.gratis} />
                                             </div>
                                             <div className={styles.sliderGroup}>
                                                 <div className={styles.switchContainer}>
@@ -1192,8 +1248,19 @@ const EditarProduto: React.FC = () => {
                                             onChange={(e) => handleFileChange(e, 'produto')}
                                             style={{ display: "none" }}
                                             multiple
+                                            accept="image/*"
                                         />
-                                        <p className={styles.maxLenght}>Tamanho Máximo: x MB</p>
+                                        <p className={styles.maxLenght}>Tamanho Máximo: 5MB</p>
+                                    </div>
+                                    <div className={styles.fileList}>
+                                        {mapeamentoImagens.filter(m => m.tipo === 'PRODUTO').map((file, index) => (
+                                            <div key={index} className={styles.fileItem}>
+                                                <span>{file.nomeArquivo}</span>
+                                                <button onClick={() => handleRemoveFile(file.nomeArquivo, 'PRODUTO')} className={styles.removeFileBtn}>
+                                                    <i className="fa fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                     <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
                                 </div>
@@ -1223,8 +1290,19 @@ const EditarProduto: React.FC = () => {
                                             ref={bannerFileInputRef}
                                             onChange={(e) => handleFileChange(e, 'banner')}
                                             style={{ display: "none" }}
+                                            accept="image/*"
                                         />
-                                        <p className={styles.maxLenght}>Tamanho Máximo: x MB. Para melhor resultado utilize imagens no tamanho 999 x 99</p>
+                                        <p className={styles.maxLenght}>Tamanho Máximo: 5MB. Para melhor resultado utilize imagens no tamanho 999 x 99</p>
+                                    </div>
+                                    <div className={styles.fileList}>
+                                        {mapeamentoImagens.filter(m => m.tipo === 'BANNER').map((file, index) => (
+                                            <div key={index} className={styles.fileItem}>
+                                                <span>{file.nomeArquivo}</span>
+                                                <button onClick={() => handleRemoveFile(file.nomeArquivo, 'BANNER')} className={styles.removeFileBtn}>
+                                                    <i className="fa fa-trash"></i>
+                                                </button>
+                                            </div>
+                                        ))}
                                     </div>
                                     <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
                                 </div>
@@ -1684,7 +1762,22 @@ const EditarProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="precoValor">
                                                             Valor
                                                 </label>
-                                                        <input type="number" name="precoValor" className={styles.input} value={newCupom.valor} onChange={e => setNewCupom(c => ({...c, valor: parseFloat(e.target.value)}))} />
+                                                        <div className={styles.inputWithIcon}>
+                                                                <input
+                                                                    type="number"
+                                                                    name="precoValor"
+                                                                    className={styles.input}
+                                                                    value={newCupom.valor}
+                                                                    onChange={e => {
+                                                                        const value = parseFloat(e.target.value);
+                                                                        if (newCupom.tipoDesconto === 'PERCENTUAL' && value > 100) {
+                                                                            return;
+                                                                        }
+                                                                        setNewCupom(c => ({ ...c, valor: value }));
+                                                                    }}
+                                                                />
+                                                                {newCupom.tipoDesconto === 'PERCENTUAL' && <span className={styles.inputIcon}>%</span>}
+                                                            </div>
                                             </div>
                                         </div>
                                                 <div className={styles.dataCol5}>
@@ -1762,7 +1855,7 @@ const EditarProduto: React.FC = () => {
                                                                             {cupom.url}
                                                                     </a>
                                                                 </td>
-                                                                    <td>R$ {cupom.valor}</td>
+                                                                    <td>{cupom.tipoDesconto === 'PERCENTUAL' ? `${cupom.valor}%` : `R$ ${cupom.valor}`}</td>
                                                                 <td>99</td>
                                                                 <td>99</td>
                                                                 <td>99%</td>
@@ -1772,6 +1865,12 @@ const EditarProduto: React.FC = () => {
                                                                             type="checkbox"
                                                                             className={styles.slideCheckbox}
                                                                             id={`cupomAtivo${originalIndex}`}
+                                                                            checked={cupom.status === 'ATIVO'}
+                                                                            onChange={(e) => {
+                                                                                const newStatus = e.target.checked ? 'ATIVO' : 'INATIVO';
+                                                                                const updatedCupom = { ...cupom, status: newStatus };
+                                                                                handleUpdateCupom(originalIndex, updatedCupom);
+                                                                            }}
                                                                         />
                                                                         <label
                                                                             className={styles.slideSwitch}
@@ -1818,4 +1917,4 @@ const EditarProduto: React.FC = () => {
     );
 };
 
-export default EditarProduto; 
+export default EditarProduto;

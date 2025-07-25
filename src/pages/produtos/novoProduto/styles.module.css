@@ -124,6 +124,7 @@
 
 .navItem span {
     font-size: 15px;
+    margin-left: 8px;
 }
 
 .navItem .expandIcon {
@@ -362,6 +363,27 @@
     position: absolute;
     right: 0;
     bottom: -25px;
+}
+
+.fileList {
+    margin-top: 10px;
+}
+
+.fileItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.removeFileBtn {
+    background: none;
+    border: none;
+    color: #ff0000;
+    cursor: pointer;
 }
 
 .dataSection {
@@ -1866,4 +1888,26 @@
 
 .alignEnd {
     align-items: flex-end;
+}
+
+.inputWithIcon {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.inputIcon {
+    position: absolute;
+    right: 10px;
+    color: #888;
+}
+
+input[type=number]::-webkit-inner-spin-button, 
+input[type=number]::-webkit-outer-spin-button { 
+  -webkit-appearance: none; 
+  margin: 0; 
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
 }

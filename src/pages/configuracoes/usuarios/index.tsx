@@ -27,7 +27,6 @@ interface Usuario {
 const initialUserState = {
     nome: '',
     email: '',
-    senha: '',
     permissao: 'FUNCIONARIO',
     cpf: '',
     celular: '',
@@ -47,9 +46,13 @@ const Usuarios: React.FC = () => {
     const [openSubMenus, setOpenSubMenus] = useState<string[]>(['Configurações']);
     const [view, setView] = useState('table');
     const overlayRef = useRef<HTMLDivElement>(null);
+    const [allUsers, setAllUsers] = useState<Usuario[]>([]);
     const [usuarios, setUsuarios] = useState<Usuario[]>([]);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
+    const [filtroNome, setFiltroNome] = useState('');
+    const [filtroEmail, setFiltroEmail] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
     const [newUser, setNewUser] = useState(initialUserState);
     const [editingUser, setEditingUser] = useState<Usuario | null>(null);
     const navigate = useNavigate();
@@ -60,35 +63,72 @@ const Usuarios: React.FC = () => {
     };
 
     useEffect(() => {
-        const fetchUsuarios = async () => {
+        const fetchAllUsuarios = async () => {
+            setIsLoading(true);
             const token = localStorage.getItem('authToken');
             const apiUrl = import.meta.env.VITE_API_URL;
             if (!token || !apiUrl) {
                 console.error("Token ou URL da API não encontrados.");
+                setIsLoading(false);
                 return;
             }
 
             try {
-                const response = await fetch(`${apiUrl}usuario/listar-todos/usuarios?page=${page}&size=10`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                if (!response.ok) {
-                    throw new Error('Falha ao buscar usuários.');
+                let currentPage = 0;
+                let fetchedUsers: Usuario[] = [];
+                let totalPagesFromApi = 1;
+
+                while (currentPage < totalPagesFromApi) {
+                    const response = await fetch(`${apiUrl}usuario/listar-todos/usuarios?page=${currentPage}&size=10`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (!response.ok) throw new Error('Falha ao buscar usuários.');
+                    
+                    const data = await response.json();
+                    fetchedUsers.push(...data.content);
+                    totalPagesFromApi = data.totalPages;
+                    currentPage++;
                 }
-                const data = await response.json();
-                setUsuarios(data.content || []);
-                setTotalPages(data.totalPages || 0);
+                setAllUsers(fetchedUsers);
             } catch (error) {
                 console.error("Erro ao buscar usuários:", error);
+            } finally {
+                setIsLoading(false);
             }
         };
 
         if (view === 'table') {
-            fetchUsuarios();
+            fetchAllUsuarios();
         }
-    }, [view, page]);
+    }, [view]);
+
+    useEffect(() => {
+        let filtered = allUsers.filter(user =>
+            user.permissao === 'ADMIN' || user.permissao === 'FUNCIONARIO'
+        );
+
+        if (filtroNome) {
+            filtered = filtered.filter(user =>
+                user.nome.toLowerCase().includes(filtroNome.toLowerCase())
+            );
+        }
+
+        if (filtroEmail) {
+            filtered = filtered.filter(user =>
+                user.email.toLowerCase().includes(filtroEmail.toLowerCase())
+            );
+        }
+
+        const itemsPerPage = 10;
+        setTotalPages(Math.ceil(filtered.length / itemsPerPage));
+        
+        const paginatedUsers = filtered.slice(
+            page * itemsPerPage,
+            (page + 1) * itemsPerPage
+        );
+        setUsuarios(paginatedUsers);
+
+    }, [allUsers, page, filtroNome, filtroEmail]);
 
     useEffect(() => {
         const overlay = overlayRef.current;
@@ -148,21 +188,14 @@ const Usuarios: React.FC = () => {
 
         const userToSave = editingUser || newUser;
         const { nome, email, permissao, cpf, celular, endereco } = userToSave as any;
-        const senha = (userToSave as any).senha;
 
         if (!nome || !email) {
             alert('Nome e e-mail são obrigatórios.');
             return;
         }
 
-        if (!editingUser && !senha) {
-            alert('A senha é obrigatória para novos usuários.');
-            return;
-        }
-
         const payload: any = { nome, email, permissao };
 
-        if (senha) payload.senha = senha;
         if (cpf) payload.cpf = cpf;
         if (celular) payload.celular = celular;
 
@@ -195,6 +228,39 @@ const Usuarios: React.FC = () => {
             }
         } catch (error) {
             console.error(`Erro ao ${editingUser ? 'atualizar' : 'criar'} usuário:`, error);
+            alert('Erro ao conectar com o servidor.');
+        }
+    };
+
+    const handleDeleteUser = async (userId: number) => {
+        if (!window.confirm('Tem certeza que deseja deletar este usuário?')) {
+            return;
+        }
+
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token || !apiUrl) {
+            alert('Erro de configuração. Tente novamente mais tarde.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}usuario/deletar/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                alert('Usuário deletado com sucesso!');
+                setUsuarios(prev => prev.filter(u => u.id !== userId));
+            } else {
+                const errorData = await response.json().catch(() => ({ message: 'Erro desconhecido' }));
+                alert(`Falha ao deletar usuário: ${errorData.message}`);
+            }
+        } catch (error) {
+            console.error('Erro ao deletar usuário:', error);
             alert('Erro ao conectar com o servidor.');
         }
     };
@@ -311,12 +377,8 @@ const Usuarios: React.FC = () => {
                     <div className={styles.mainPage} id="usuarioTableView">
                         <div className={styles.filterSection}>
                             <div className={styles.filterActions}>
-                                <input type="text" placeholder="Cliente" className={styles.filterInput} />
-                                <input type="text" placeholder="E-mail" className={styles.filterInput} />
-                                <button className={styles.filterInputBtn}>
-                                    <FaSearch />
-                                    Filtrar
-                                </button>
+                                <input type="text" placeholder="Nome do Usuário" className={styles.filterInput} value={filtroNome} onChange={(e) => { setFiltroNome(e.target.value); setPage(0); }} />
+                                <input type="text" placeholder="E-mail" className={styles.filterInput} value={filtroEmail} onChange={(e) => { setFiltroEmail(e.target.value); setPage(0); }} />
                                 <button id="novoUsuarioBtn" className={styles.novoUsuarioBtn} onClick={() => setView('form')}>
                                     Novo Usuário
                                 </button>
@@ -363,7 +425,7 @@ const Usuarios: React.FC = () => {
                                                         <button className={styles.btnEdit} onClick={() => handleEditClick(user)}>
                                                             <FaPencilAlt />
                                                         </button>
-                                                        <button className={styles.btnDelete}>
+                                                        <button className={styles.btnDelete} onClick={() => handleDeleteUser(user.id)}>
                                                             <FaTrashCan />
                                                         </button>
                                                     </div>
@@ -422,14 +484,6 @@ const Usuarios: React.FC = () => {
                                                 E-mail
                                             </label>
                                             <input type="email" name="email" className={styles.input} value={editingUser?.email || newUser.email} onChange={handleInputChange} />
-                                        </div>
-                                    </div>
-                                    <div className={styles.dataCol6}>
-                                        <div className={styles.inputGroup}>
-                                            <label className={styles.label} htmlFor="senha">
-                                                Senha
-                                            </label>
-                                            <input type="password" name="senha" className={styles.input} value={(editingUser as any)?.senha || newUser.senha} onChange={handleInputChange} />
                                         </div>
                                     </div>
                                     <div className={styles.dataCol6}>
