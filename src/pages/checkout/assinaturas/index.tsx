@@ -13,8 +13,11 @@ interface Assinatura {
         id: number;
     produto: {
             dadosProduto: {
-        dadosGerais: {
-            nome: string;
+                dadosGerais: {
+                    nome: string;
+                }
+                cobranca: {
+                    preco: number;
                 }
             }
         }
@@ -47,6 +50,9 @@ const Assinaturas: React.FC = () => {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState('cartao');
     const menuRef = useRef<HTMLDivElement>(null);
     const [assinaturas, setAssinaturas] = useState<Assinatura[]>([]);
+    const [filteredAssinaturas, setFilteredAssinaturas] = useState<Assinatura[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [sortOrder, setSortOrder] = useState('data');
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -89,6 +95,33 @@ const Assinaturas: React.FC = () => {
     useEffect(() => {
         fetchAssinaturas();
     }, []);
+
+    useEffect(() => {
+        let result = [...assinaturas];
+
+        if (searchTerm) {
+            result = result.filter(a => 
+                a.venda?.produto?.dadosProduto?.dadosGerais?.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                a.plano?.nome.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        switch (sortOrder) {
+            case 'data':
+                result.sort((a, b) => new Date(b.dataInicio).getTime() - new Date(a.dataInicio).getTime());
+                break;
+            case 'valor-maior':
+                result.sort((a, b) => (b.venda?.produto?.dadosProduto?.cobranca?.preco || 0) - (a.venda?.produto?.dadosProduto?.cobranca?.preco || 0));
+                break;
+            case 'valor-menor':
+                result.sort((a, b) => (a.venda?.produto?.dadosProduto?.cobranca?.preco || 0) - (b.venda?.produto?.dadosProduto?.cobranca?.preco || 0));
+                break;
+            default:
+                break;
+        }
+
+        setFilteredAssinaturas(result);
+    }, [assinaturas, searchTerm, sortOrder]);
 
     const handleCancelSubscription = async (idAssinatura: string) => {
         const token = localStorage.getItem('authToken');
@@ -300,7 +333,13 @@ const Assinaturas: React.FC = () => {
                                 <div className={styles.filterActionsLeft}>
                                     <div className={styles.searchWrapper}>
                                         <FaSearch className={styles.searchIcon} />
-                                        <input type="text" className={styles.searchInput} placeholder="Pesquisar" />
+                                        <input 
+                                            type="text" 
+                                            className={styles.searchInput} 
+                                            placeholder="Pesquisar" 
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
                                     </div>
                                 </div>
                                 <div className={styles.filterActionsRight}>
@@ -309,11 +348,15 @@ const Assinaturas: React.FC = () => {
                                         <span className={styles.orderByLabel}>Ordenar por :</span>
                                         <span className={styles.orderByValue}></span>
                                         <FaChevronDown className={styles.selectIcon} />
-                                        <select className={styles.filterSelect} aria-label="Ordenar por">
-                                            <option value="data" selected>Novos</option>
-                                            <option value="valor">Mais Caros</option>
-                                            <option value="cliente">Mais Baratos</option>
-                                            <option value="cliente">Mais Vendidos</option>
+                                        <select 
+                                            className={styles.filterSelect} 
+                                            aria-label="Ordenar por"
+                                            value={sortOrder}
+                                            onChange={(e) => setSortOrder(e.target.value)}
+                                        >
+                                            <option value="data">Novos</option>
+                                            <option value="valor-maior">Mais Caros</option>
+                                            <option value="valor-menor">Mais Baratos</option>
                                         </select>
                                     </div>
                                 </div>
@@ -335,7 +378,7 @@ const Assinaturas: React.FC = () => {
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {assinaturas.map(assinatura => (
+                                        {filteredAssinaturas.map(assinatura => (
                                             <tr key={assinatura.id}>
                                                 <td className={styles.productImageCell}>
                                                     <div className={styles.productImage}>
@@ -345,7 +388,7 @@ const Assinaturas: React.FC = () => {
                                                 <td>{assinatura.venda?.produto?.dadosProduto?.dadosGerais?.nome || 'Produto Indisponível'} - {assinatura.plano?.nome || 'Plano Indisponível'}</td>
                                                 <td>#{assinatura.venda?.id}</td>
                                                 <td>{formatarData(assinatura.dataInicio)}</td>
-                                                <td>R$ {assinatura.plano?.valor?.toFixed(2).replace('.', ',') || '0,00'}</td>
+                                                <td>R$ {assinatura.venda?.produto?.dadosProduto?.cobranca?.preco?.toFixed(2).replace('.', ',') || '0,00'}</td>
                                                 <td>{assinatura.metodoPagamento || 'N/A'}</td>
                                                 <td className={styles['text-center']}>
                                                     <div className={styles.statusItens}>
@@ -377,4 +420,4 @@ const Assinaturas: React.FC = () => {
     );
 };
 
-export default Assinaturas; 
+export default Assinaturas;

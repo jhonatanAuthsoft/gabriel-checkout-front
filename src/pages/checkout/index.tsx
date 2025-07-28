@@ -71,7 +71,6 @@ const Checkout: React.FC = () => {
     const [email, setEmail] = useState('');
     const [celular, setCelular] = useState('');
     const [cpf, setCpf] = useState('');
-    const [password, setPassword] = useState('');
     const [cep, setCep] = useState('');
     const [logradouro, setLogradouro] = useState('');
     const [numero, setNumero] = useState('');
@@ -123,7 +122,6 @@ const Checkout: React.FC = () => {
             else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'E-mail inválido.';
             if (!celular || celular.replace(/\D/g, '').length < 10) newErrors.celular = 'Celular inválido.';
             if (!cpf || cpf.replace(/\D/g, '').length < 11) newErrors.cpf = 'CPF/CNPJ inválido.';
-            if (!password || password.length < 6) newErrors.password = 'A senha deve ter pelo menos 6 caracteres.';
             if (!cep || cep.replace(/\D/g, '').length < 8) newErrors.cep = 'CEP inválido.';
             if (!logradouro) newErrors.logradouro = 'Endereço é obrigatório.';
             if (!numero) newErrors.numero = 'Número é obrigatório.';
@@ -135,7 +133,7 @@ const Checkout: React.FC = () => {
             setIsFormValid(Object.keys(newErrors).length === 0);
         };
         validateForm();
-    }, [nome, email, celular, cpf, password, cep, logradouro, numero, bairro, cidade, uf]);
+    }, [nome, email, celular, cpf, cep, logradouro, numero, bairro, cidade, uf]);
 
     useEffect(() => {
         const fetchProductDetails = async () => {
@@ -221,7 +219,7 @@ const Checkout: React.FC = () => {
                             if (urlObrigado) {
                                 window.open(formatUrl(urlObrigado), '_blank');
                             }
-                            navigate('/assinaturas');
+                            navigate('/');
                         }
                     }
                 } catch (error) {
@@ -331,7 +329,7 @@ const Checkout: React.FC = () => {
             setErrorMessage('Por favor, preencha todos os campos corretamente.');
             setTimeout(() => setErrorMessage(null), 5000);
             const newTouched: Record<string, boolean> = {
-                nome: true, email: true, celular: true, cpf: true, password: true,
+                nome: true, email: true, celular: true, cpf: true,
                 cep: true, logradouro: true, numero: true, bairro: true, cidade: true, uf: true
             };
             const newErrors: Record<string, string> = {};
@@ -340,7 +338,6 @@ const Checkout: React.FC = () => {
             else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'E-mail inválido.';
             if (!celular || celular.replace(/\D/g, '').length < 10) newErrors.celular = 'Celular inválido.';
             if (!cpf || cpf.replace(/\D/g, '').length < 11) newErrors.cpf = 'CPF/CNPJ inválido.';
-            if (!password || password.length < 6) newErrors.password = 'A senha deve ter pelo menos 6 caracteres.';
             if (!cep || cep.replace(/\D/g, '').length < 8) newErrors.cep = 'CEP inválido.';
             if (!logradouro) newErrors.logradouro = 'Endereço é obrigatório.';
             if (!numero) newErrors.numero = 'Número é obrigatório.';
@@ -375,7 +372,7 @@ const Checkout: React.FC = () => {
                         cpf,
                         celular,
                         status: 'ATIVO',
-                        senha: password,
+                        senha: '123456',
                         endereco: {
                             endereco: logradouro,
                             numeroResidencia: numero,
@@ -449,7 +446,7 @@ const Checkout: React.FC = () => {
                 if (urlObrigado) {
                     window.open(formatUrl(urlObrigado), '_blank');
                 }
-                navigate('/assinaturas');
+                navigate('/');
                 return;
             }
 
@@ -486,7 +483,7 @@ const Checkout: React.FC = () => {
                     if (urlObrigado) {
                         window.open(formatUrl(urlObrigado), '_blank');
                     }
-                    navigate('/assinaturas');
+                    navigate('/');
 
                 } catch (err: any) {
                     setErrorMessage(err.message);
@@ -521,7 +518,6 @@ const Checkout: React.FC = () => {
                         email={email} setEmail={setEmail} 
                         celular={celular} setCelular={setCelular} 
                         cpf={cpf} setCpf={setCpf} 
-                        password={password} setPassword={setPassword}
                         cep={cep} setCep={setCep}
                         logradouro={logradouro} setLogradouro={setLogradouro}
                         numero={numero} setNumero={setNumero}

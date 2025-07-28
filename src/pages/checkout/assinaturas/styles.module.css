@@ -146,6 +146,7 @@ body.no-scroll {
     margin-bottom: 2px;
     color: #000;
     font-weight: 550;
+    gap: 5px;
 }
 
 .navItem i:first-child {

@@ -11,8 +11,6 @@ interface RegistrationFormProps {
     setCelular: (value: string) => void;
     cpf: string;
     setCpf: (value: string) => void;
-    password: string;
-    setPassword: (value: string) => void;
     cep: string;
     setCep: (value: string) => void;
     logradouro: string;
@@ -33,7 +31,7 @@ interface RegistrationFormProps {
 }
 
 const RegistrationForm: React.FC<RegistrationFormProps> = ({
-    nome, setNome, email, setEmail, celular, setCelular, cpf, setCpf, password, setPassword,
+    nome, setNome, email, setEmail, celular, setCelular, cpf, setCpf,
     cep, setCep, logradouro, setLogradouro, numero, setNumero, complemento, setComplemento,
     bairro, setBairro, cidade, setCidade, uf, setUf, errors, setErrors
 }) => {
@@ -63,11 +61,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                 else if (value.replace(/\D/g, '').length < 11) newErrors.cpf = 'CPF/CNPJ inválido.';
                 else delete newErrors.cpf;
                 break;
-            case 'password':
-                if (!value) newErrors.password = 'Senha é obrigatória.';
-                else if (value.length < 6) newErrors.password = 'A senha deve ter pelo menos 6 caracteres.';
-                else delete newErrors.password;
-                break;
+
             case 'cep':
                 if (!value) newErrors.cep = 'CEP é obrigatório.';
                 else if (value.replace(/\D/g, '').length < 8) newErrors.cep = 'CEP inválido.';
@@ -190,14 +184,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     </div>
                     {errors.email && touched.email && <p className={styles.errorText}>{errors.email}</p>}
                 </div>
-                <div className={styles.formGroup}>
-                    <label>Senha</label>
-                    <div className={`${styles.inputWrapper} ${!errors.password && touched.password ? styles.valid : ''}`}>
-                        <input type="password" name="password" placeholder="Crie uma senha" value={password} onChange={handleChange(setPassword)} onBlur={handleBlur} />
-                        {!errors.password && touched.password && <div className={styles.validIcon}><FaCheck /></div>}
-                    </div>
-                    {errors.password && touched.password && <p className={styles.errorText}>{errors.password}</p>}
-                </div>
+
                 <div className={styles.formRow}>
                     <div className={styles.formGroup}>
                         <label>Celular</label>
