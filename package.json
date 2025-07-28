@@ -19,6 +19,7 @@
     "@fortawesome/react-fontawesome": "^0.2.2",
     "@studio-freight/lenis": "^1.0.42",
     "@types/lodash": "^4.17.20",
+    "@types/qrcode.react": "^1.0.5",
     "axios": "^1.10.0",
     "chart.js": "^4.5.0",
     "clsx": "^2.1.1",

@@ -556,6 +556,24 @@ body.noScroll {
     color: #3D3C42;
 }
 
+.errorMessage {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 15px 20px;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+}
+
 @media (max-width: 1200px) {
     .checkoutContainer {
         padding: 30px 20px;

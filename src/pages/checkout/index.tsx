@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import styles from './styles.module.css';
 import Header from '../../components/header';
@@ -8,10 +8,25 @@ import RegistrationForm from '../../components/registrationForm';
 import PaymentForm from '../../components/paymentForm';
 import Confirmation from '../../components/confirmation';
 
+const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
+    <div className={styles.errorMessage}>
+        {message}
+    </div>
+);
+
+const formatUrl = (url: string): string => {
+    if (!url) return '';
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        return `https://${url}`;
+    }
+    return url;
+};
+
 interface Plan {
     id: number;
     nome: string;
     preco: number;
+    status: boolean;
 }
 
 interface Cupom {
@@ -39,7 +54,7 @@ interface Product {
             telefoneSuporte?: number;
             whatsappSuporte?: number;
         },
-        urlObrigado?: string;
+        urlPersonalizada?: string;
     };
     checkoutProduto: {
         perguntas: Pergunta[];
@@ -89,8 +104,8 @@ const Checkout: React.FC = () => {
     const [boletoData, setBoletoData] = useState<string | null>(null);
     const [urlObrigado, setUrlObrigado] = useState<string | null>(null);
 
-    const [error, setError] = useState('');
-    const [productLoadError, setProductLoadError] = useState('');
+        const [errorMessage, setErrorMessage] = useState<string | null>(null);
+    
     const navigate = useNavigate();
     const { idProduto, idPlano } = useParams();
 
@@ -125,7 +140,7 @@ const Checkout: React.FC = () => {
     useEffect(() => {
         const fetchProductDetails = async () => {
             if (!idProduto || !idPlano) return;
-            setProductLoadError('');
+
             const apiUrl = import.meta.env.VITE_API_URL;
             try {
                 const response = await fetch(`${apiUrl}produto/listar-por-id/${idProduto}`);
@@ -144,13 +159,17 @@ const Checkout: React.FC = () => {
                 }
 
                 setProduct(productData);
-                setUrlObrigado(productData.dadosProduto.urlObrigado || null);
+                setUrlObrigado(productData.dadosProduto.urlPersonalizada || null);
                 
                 if (productData.planos && productData.planos.length > 0) {
                     const planIdFromUrl = parseInt(idPlano, 10);
                     const selectedPlan = productData.planos.find((p: Plan) => p.id === planIdFromUrl);
 
                     if (selectedPlan) {
+                        if (!selectedPlan.status) {
+                            navigate('/login');
+                            return;
+                        }
                         setSelectedPlanoId(selectedPlan.id);
                         const initialPrice = selectedPlan.preco || 0;
                         setTotalPrice(initialPrice);
@@ -162,13 +181,14 @@ const Checkout: React.FC = () => {
                     throw new Error('Este produto não possui planos disponíveis.');
                 }
             } catch (err: any) {
-                setProductLoadError(err.message);
+                setErrorMessage(err.message);
+                setTimeout(() => setErrorMessage(null), 5000);
                 console.error(err);
             }
         };
 
         fetchProductDetails();
-    }, [idProduto, idPlano]);
+    }, [idProduto, idPlano, navigate]);
 
     useEffect(() => {
         if (product && selectedPlanoId) {
@@ -182,9 +202,105 @@ const Checkout: React.FC = () => {
         }
     }, [selectedPlanoId, product, discount, quantity]);
 
+    useEffect(() => {
+        if (pixData && idVenda) {
+            const interval = setInterval(async () => {
+                try {
+                    const apiUrl = import.meta.env.VITE_API_URL;
+                    const systemToken = '47da971a7eb43c6921de9714a545906667d2b97bb8d7cb4bdfc0501067df53e6708ddc1d9890670533ea85d734efa1fe6c16a42fd9d37748e902475211ecd583';
+                    const response = await fetch(`${apiUrl}venda/listar-id/${idVenda}`, {
+                        headers: {
+                            'token-sistema': systemToken
+                        }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.dados.statusPagamento === 'APROVADO') {
+                            clearInterval(interval);
+                            if (urlObrigado) {
+                                window.open(formatUrl(urlObrigado), '_blank');
+                            }
+                            navigate('/assinaturas');
+                        }
+                    }
+                } catch (error) {
+                    console.error('Erro ao verificar status da venda:', error);
+                }
+            }, 30000);
+
+            return () => clearInterval(interval);
+        }
+    }, [pixData, idVenda, urlObrigado]);
+
+    const generatePayment = useCallback(async (method: 'pix' | 'boleto') => {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        const systemToken = '47da971a7eb43c6921de9714a545906667d2b97bb8d7cb4bdfc0501067df53e6708ddc1d9890670533ea85d734efa1fe6c16a42fd9d37748e902475211ecd583';
+
+        let endpoint = '';
+        let tipoCobranca = '';
+
+        if (method === 'pix') {
+            endpoint = 'pagamento/pix';
+            tipoCobranca = 'PIX';
+        } else if (method === 'boleto') {
+            endpoint = 'pagamento/boleto';
+            tipoCobranca = 'BOLETO';
+        } else {
+            setErrorMessage('Método de pagamento não suportado.');
+            return;
+        }
+
+        try {
+            const paymentResponse = await fetch(`${apiUrl}${endpoint}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'token-sistema': systemToken
+                },
+                body: JSON.stringify({
+                    tipoCobranca,
+                    email,
+                    idVenda,
+                }),
+            });
+
+            if (!paymentResponse.ok) {
+                const errorData = await paymentResponse.json();
+                throw new Error(errorData.message || `Falha ao gerar ${method}.`);
+            }
+
+            const responseText = await paymentResponse.text();
+            try {
+                const paymentData = JSON.parse(responseText);
+                if (method === 'pix') {
+                    setPixData({ qrCode: paymentData.location, copiaECola: paymentData.pixCopiaECola });
+                } else if (method === 'boleto') {
+                    setBoletoData(paymentData.pdf);
+                }
+            } catch (e) {
+                throw new Error(`Falha ao processar a resposta do pagamento: ${responseText}`);
+            }
+
+        } catch (err: any) {
+            setErrorMessage(err.message);
+            console.error(err);
+        }
+    }, [email, idVenda]);
+
+    useEffect(() => {
+        if (step === 2) {
+            if (paymentMethod === 'pix' && !pixData) {
+                generatePayment('pix');
+            } else if (paymentMethod === 'boleto' && !boletoData) {
+                generatePayment('boleto');
+            }
+        }
+    }, [paymentMethod, step, pixData, boletoData, generatePayment]);
+
     const handleApplyCoupon = () => {
         if (!product || !product.cupom || couponCode.trim() === '') {
-            setError('Cupom inválido ou não aplicável a este produto.');
+            setErrorMessage('Cupom inválido ou não aplicável a este produto.');
+            setTimeout(() => setErrorMessage(null), 5000);
             return;
         }
 
@@ -201,17 +317,18 @@ const Checkout: React.FC = () => {
             setDiscount(discountValue);
             const newFinalPrice = totalPrice - discountValue;
             setFinalPrice(newFinalPrice > 0 ? newFinalPrice : 0);
-            setError('');
         } else {
-            setError('Cupom inválido.');
+            setErrorMessage('Cupom inválido.');
+            setTimeout(() => setErrorMessage(null), 5000);
             setDiscount(0);
             setFinalPrice(totalPrice);
         }
     };
 
-    const handleNextStep = async () => {
+    const handleNextStep = async (method?: string) => {
         if (!isFormValid) {
-            setError('Por favor, preencha todos os campos corretamente.');
+            setErrorMessage('Por favor, preencha todos os campos corretamente.');
+            setTimeout(() => setErrorMessage(null), 5000);
             const newTouched: Record<string, boolean> = {
                 nome: true, email: true, celular: true, cpf: true, password: true,
                 cep: true, logradouro: true, numero: true, bairro: true, cidade: true, uf: true
@@ -235,12 +352,12 @@ const Checkout: React.FC = () => {
         }
 
         if (step === 1) {
-        setError('');
         const apiUrl = import.meta.env.VITE_API_URL;
         const systemToken = '47da971a7eb43c6921de9714a545906667d2b97bb8d7cb4bdfc0501067df53e6708ddc1d9890670533ea85d734efa1fe6c16a42fd9d37748e902475211ecd583';
 
         if (!apiUrl || !product || !selectedPlanoId) {
-            setError('Dados do produto ou plano incompletos.');
+            setErrorMessage('Dados do produto ou plano incompletos.');
+            setTimeout(() => setErrorMessage(null), 5000);
             return;
         }
 
@@ -315,23 +432,29 @@ const Checkout: React.FC = () => {
                     throw new Error('ID da venda não foi retornado pela API.');
                 }
         } catch (err: any) {
-            setError(err.message || 'Ocorreu um erro na comunicação com o servidor.');
+            setErrorMessage(err.message || 'Ocorreu um erro na comunicação com o servidor.');
+            setTimeout(() => setErrorMessage(null), 5000);
             console.error(err);
         }
         } else if (step === 2) {
             const apiUrl = import.meta.env.VITE_API_URL;
             const systemToken = '47da971a7eb43c6921de9714a545906667d2b97bb8d7cb4bdfc0501067df53e6708ddc1d9890670533ea85d734efa1fe6c16a42fd9d37748e902475211ecd583';
 
-            if (pixData || boletoData) {
-                if (urlObrigado) {
-                    window.location.href = urlObrigado;
-                } else {
-                    setStep(step + 1);
-                }
+            if (pixData) {
                 return;
             }
 
-            if (paymentMethod === 'creditCard') {
+            if (boletoData) {
+                if (urlObrigado) {
+                    window.open(formatUrl(urlObrigado), '_blank');
+                }
+                navigate('/assinaturas');
+                return;
+            }
+
+            const currentPaymentMethod = method || paymentMethod;
+
+            if (currentPaymentMethod === 'creditCard') {
                 try {
                     const paymentResponse = await fetch(`${apiUrl}pagamento/cartao`, {
                         method: 'POST',
@@ -360,74 +483,27 @@ const Checkout: React.FC = () => {
                     }
                     
                     if (urlObrigado) {
-                        window.location.href = urlObrigado;
-                    } else {
-            setStep(step + 1);
+                        window.open(formatUrl(urlObrigado), '_blank');
                     }
+                    navigate('/assinaturas');
 
                 } catch (err: any) {
-                    setError(err.message);
+                    setErrorMessage(err.message);
+                    setTimeout(() => setErrorMessage(null), 5000);
                     console.error(err);
                 }
                 return;
             }
 
-            let endpoint = '';
-            let tipoCobranca = '';
-
-            if (paymentMethod === 'pix') {
-                endpoint = 'pagamento/pix';
-                tipoCobranca = 'PIX';
-            } else if (paymentMethod === 'boleto') {
-                endpoint = 'pagamento/boleto';
-                tipoCobranca = 'BOLETO';
-            } else {
-                setError('Método de pagamento não suportado.');
-                return;
-            }
-
-            try {
-                const paymentResponse = await fetch(`${apiUrl}${endpoint}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'token-sistema': systemToken
-                    },
-                    body: JSON.stringify({
-                        tipoCobranca,
-                        email,
-                        idVenda,
-                    }),
-                });
-
-                if (!paymentResponse.ok) {
-                    const errorData = await paymentResponse.json();
-                    throw new Error(errorData.message || `Falha ao gerar ${paymentMethod}.`);
-                }
-
-                const paymentData = await paymentResponse.json();
-                if (paymentMethod === 'pix') {
-                    setPixData({ qrCode: paymentData.location, copiaECola: paymentData.pixCopiaECola });
-                } else if (paymentMethod === 'boleto') {
-                    setBoletoData(paymentData.pdf);
-                }
-
-            } catch (err: any) {
-                setError(err.message);
-                console.error(err);
+            if (currentPaymentMethod === 'pix') {
+                await generatePayment(currentPaymentMethod);
+            } else if (currentPaymentMethod === 'boleto') {
+                await generatePayment(currentPaymentMethod);
             }
         }
     };
 
-    if (productLoadError) {
-        return (
-            <div className={styles.errorContainer}>
-                <h2>Ocorreu um Erro</h2>
-                <p>{productLoadError}</p>
-                <button onClick={() => navigate('/')}>Voltar para o Início</button>
-            </div>
-        );
-    }
+
 
     const selectedPlan = product?.planos.find(p => p.id === selectedPlanoId);
 
@@ -476,19 +552,20 @@ const Checkout: React.FC = () => {
                         setBandeiraCartao={setBandeiraCartao}
                         parcelas={parcelas}
                         setParcelas={setParcelas}
+                        handleNextStep={(method) => handleNextStep(method)}
                     />}
                     {step === 3 && <Confirmation />}
                     
-                    {error && <p className={styles.errorMessage}>{error}</p>}
+                    {errorMessage && <ErrorMessage message={errorMessage} />}
 
                     {step < 3 && (
                          <div className={styles.formFooter}>
                             <button 
-                                onClick={handleNextStep} 
+                                onClick={() => handleNextStep()}
                                 className={styles.btnPrimary}
-                                disabled={step === 1 && !isFormValid}
+                                disabled={(step === 1 && !isFormValid) || (step === 2 && paymentMethod === 'boleto' && !!boletoData)}
                             >
-                                {step === 1 ? 'Próximo' : (pixData || boletoData) ? 'Avançar' : 'Finalizar Pagamento'}
+                                {step === 1 ? 'Próximo' : (paymentMethod === 'boleto' && boletoData) ? 'Boleto Gerado' : (pixData || boletoData) ? 'Avançar' : 'Finalizar Pagamento'}
                             </button>
                         </div>
                     )}

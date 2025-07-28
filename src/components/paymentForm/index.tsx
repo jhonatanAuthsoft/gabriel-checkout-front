@@ -1,6 +1,7 @@
 import React from 'react';
 import { FaCreditCard, FaBarcode, FaCopy, FaCcVisa, FaCcMastercard, FaCcAmex } from 'react-icons/fa';
 import { FaPix } from 'react-icons/fa6';
+import { QRCodeCanvas } from 'qrcode.react';
 import styles from './styles.module.css';
 
 interface PaymentFormProps {
@@ -24,6 +25,7 @@ interface PaymentFormProps {
     setBandeiraCartao: (value: string) => void;
     parcelas: number;
     setParcelas: (value: number) => void;
+    handleNextStep: (method: string) => void;
 }
 
 const PaymentForm: React.FC<PaymentFormProps> = ({ 
@@ -36,7 +38,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     dataVencimento, setDataVencimento,
     codigoSeguranca, setCodigoSeguranca,
     bandeiraCartao, setBandeiraCartao,
-    parcelas, setParcelas
+    parcelas, setParcelas,
+    handleNextStep
 }) => {
 
     const getCardType = (number: string) => {
@@ -91,6 +94,12 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
         }
     };
 
+    React.useEffect(() => {
+        if (boletoData) {
+            viewBoleto();
+        }
+    }, [boletoData]);
+
     return (
         <div id="formStep2" className={`${styles.formStep} ${styles.active}`}>
             <div className={styles.formSection}>
@@ -108,9 +117,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                     </button>
                 </div>
                 
-                {paymentMethod !== 'creditCard' && !pixData && !boletoData &&
-                    <p className={styles.paymentNote}>Clique em "Finalizar Pagamento" para gerar o código.</p>
-                }
+
 
                 <div id="creditCardForm" className={`${styles.paymentForm} ${paymentMethod === 'creditCard' ? styles.active : ''}`}>
                      <div className={styles.formGroup}>
@@ -146,6 +153,9 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                     {pixData ? (
                         <div className={styles.pixContainer}>
                             <p>Escaneie o QR Code para pagar:</p>
+                            <div className={styles.qrCodeContainer}>
+                                <QRCodeCanvas value={pixData.copiaECola} size={256} />
+                            </div>
                             <p>Ou copie o código:</p>
                             <div className={styles.copyContainer}>
                                 <input type="text" value={pixData.copiaECola} readOnly />
@@ -172,4 +182,4 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     );
 };
 
-export default PaymentForm; 
+export default PaymentForm;

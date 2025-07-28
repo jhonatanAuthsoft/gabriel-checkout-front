@@ -257,7 +257,7 @@ const Relatorios = () => {
 
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
-            const response = await fetch(`${apiUrl}venda/listar`, {
+            const response = await fetch(`${apiUrl}venda/listar?size=10000`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -702,7 +702,7 @@ const Relatorios = () => {
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
                                 <select className={styles.filterSelect} name="metodoPagamento" value={filters.metodoPagamento} onChange={handleFilterChange}>
-                                    <option value="">Forma de Pagamento</option>
+                                    <option value="">Forma Pagamento</option>
                                     {metodoPagamentoOptions.map(option => (
                                         <option key={option} value={option}>{getMetodoPagamentoText(option)}</option>
                                     ))}

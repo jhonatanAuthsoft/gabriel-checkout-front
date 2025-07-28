@@ -107,7 +107,7 @@ const EditarProduto: React.FC = () => {
         }
     }, [produtoData.dadosProduto.cobranca.gratis]);
 
-    const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '' };
+    const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '', status: '' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
     const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
@@ -1579,6 +1579,21 @@ const handleSave = async () => {
                                             </div>
                                                         <p className={styles.sliderText}>Grátis</p>
                                         </div>
+                                        <div className={styles.sliderGroup}>
+                                            <div className={styles.switchContainer}>
+                                                <input
+                                                    type="checkbox"
+                                                    className={styles.slideCheckbox}
+                                                    id="planoStatus"
+                                                    checked={newPlano.status === 'ATIVO'}
+                                                    onChange={(e) => setNewPlano(p => ({...p, status: e.target.checked ? 'ATIVO' : 'INATIVO'}))}
+                                                />
+                                                <label className={styles.slideSwitch} htmlFor="planoStatus">
+                                                    <span className={styles.sliderSwitch} />
+                                                </label>
+                                            </div>
+                                            <p className={styles.sliderText}>Ativo</p>
+                                        </div>
                                     </div>
                                                 <div className={styles.dataCol2}>
                                             <div className={styles.inputGroup}>
@@ -1695,11 +1710,19 @@ const handleSave = async () => {
                                                                         <input
                                                                             type="checkbox"
                                                                             className={styles.slideCheckbox}
-                                                                            id="planoAtivo1"
+                                                                            id={`planoAtivo${index}`}
+                                                                            checked={plano.status === 'ATIVO'}
+                                                                            onChange={(e) => {
+                                                                                const newStatus = e.target.checked ? 'ATIVO' : 'INATIVO';
+                                                                                const updatedPlanos = produtoData.planos.map((p, i) => 
+                                                                                    i === index ? { ...p, status: newStatus } : p
+                                                                                );
+                                                                                setProdutoData({ ...produtoData, planos: updatedPlanos });
+                                                                            }}
                                                                         />
                                                                         <label
                                                                             className={styles.slideSwitch}
-                                                                            htmlFor="planoAtivo1"
+                                                                            htmlFor={`planoAtivo${index}`}
                                                                         >
                                                                             <span className={styles.sliderSwitch} />
                                                 </label>
