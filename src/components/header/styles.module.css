@@ -13,9 +13,10 @@
 }
 
 .logo {
-    width: 200px;
-    height: 40px;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-} 
+    width: 300px;
+    height: 100%;
+    transform: scale(1.5);
+}

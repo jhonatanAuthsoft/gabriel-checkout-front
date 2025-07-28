@@ -270,9 +270,9 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                     <div className={styles.formGroup}>
                         <label>UF</label>
                         <div className={`${styles.inputWrapper} ${!errors.uf && touched.uf ? styles.valid : ''}`}>
-                            <input type="text" name="uf" placeholder="Estado" value={uf} onChange={handleChange(setUf)} onBlur={handleBlur} maxLength={2} />
-                            {!errors.uf && touched.uf && <div className={styles.validIcon}><FaCheck /></div>}
-                        </div>
+                        <input type="text" name="uf" placeholder="UF" value={uf} onChange={handleChange(setUf)} onBlur={handleBlur} maxLength={2} />
+                        {!errors.uf && touched.uf && <div className={styles.validIcon}><FaCheck /></div>}
+                    </div>
                         {errors.uf && touched.uf && <p className={styles.errorText}>{errors.uf}</p>}
                     </div>
                 </div>
@@ -281,4 +281,4 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
     );
 };
 
-export default RegistrationForm; 
+export default RegistrationForm;

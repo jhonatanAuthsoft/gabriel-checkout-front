@@ -20,16 +20,32 @@ interface Cupom {
     valor: number;
 }
 
+interface Pergunta {
+    id: number;
+    pergunta: string;
+    resposta: string;
+}
+
 interface Product {
     id: string;
-    dadosGerais: {
-    nome: string;
+    dadosProduto: {
+        dadosGerais: {
+            nome: string;
+        },
+        suporteGarantia: {
+            email?: string;
+            mostrarTelefoneSuporte: boolean;
+            mostrarWhatsappSuporte: boolean;
+            telefoneSuporte?: number;
+            whatsappSuporte?: number;
+        },
+        urlObrigado?: string;
+    };
+    checkoutProduto: {
+        perguntas: Pergunta[];
     };
     planos: Plan[];
     cupom?: Cupom[];
-    checkoutProduto: {
-    urlObrigado?: string;
-    };
 }
 
 const Checkout: React.FC = () => {
@@ -63,6 +79,7 @@ const Checkout: React.FC = () => {
     const [selectedPlanoId, setSelectedPlanoId] = useState<number | null>(null);
 
     const [totalPrice, setTotalPrice] = useState(0);
+    const [quantity, setQuantity] = useState(1);
     const [couponCode, setCouponCode] = useState('');
     const [discount, setDiscount] = useState(0);
     const [finalPrice, setFinalPrice] = useState(0);
@@ -127,7 +144,7 @@ const Checkout: React.FC = () => {
                 }
 
                 setProduct(productData);
-                setUrlObrigado(productData.checkoutProduto.urlObrigado || null);
+                setUrlObrigado(productData.dadosProduto.urlObrigado || null);
                 
                 if (productData.planos && productData.planos.length > 0) {
                     const planIdFromUrl = parseInt(idPlano, 10);
@@ -157,13 +174,13 @@ const Checkout: React.FC = () => {
         if (product && selectedPlanoId) {
             const selectedPlan = product.planos.find(p => p.id === selectedPlanoId);
             if (selectedPlan) {
-                const newPrice = selectedPlan.preco || 0;
+                const newPrice = (selectedPlan.preco || 0) * quantity;
                 setTotalPrice(newPrice);
                 const newFinalPrice = newPrice - discount;
                 setFinalPrice(newFinalPrice > 0 ? newFinalPrice : 0);
             }
         }
-    }, [selectedPlanoId, product, discount]);
+    }, [selectedPlanoId, product, discount, quantity]);
 
     const handleApplyCoupon = () => {
         if (!product || !product.cupom || couponCode.trim() === '') {
@@ -199,8 +216,6 @@ const Checkout: React.FC = () => {
                 nome: true, email: true, celular: true, cpf: true, password: true,
                 cep: true, logradouro: true, numero: true, bairro: true, cidade: true, uf: true
             };
-            // This is a trick to trigger validation messages on all fields when trying to proceed
-            // We don't have direct access to RegistrationForm's `touched` state, so we trigger a validation
             const newErrors: Record<string, string> = {};
             if (!nome) newErrors.nome = 'Nome é obrigatório.';
             if (!email) newErrors.email = 'E-mail é obrigatório.';
@@ -241,6 +256,7 @@ const Checkout: React.FC = () => {
                         nome,
                         cpf,
                         celular,
+                        status: 'ATIVO',
                         senha: password,
                         endereco: {
                             endereco: logradouro,
@@ -250,7 +266,7 @@ const Checkout: React.FC = () => {
                             cidade,
                             uf,
                             cep
-                        }
+                        },
                     }),
                 });
 
@@ -435,7 +451,7 @@ const Checkout: React.FC = () => {
                         complemento={complemento} setComplemento={setComplemento}
                         bairro={bairro} setBairro={setBairro}
                         cidade={cidade} setCidade={setCidade}
-                        uf={uf} setUf={setUf}
+                        uf={uf} setUf={(value) => setUf(value.toUpperCase())}
                         errors={errors} setErrors={setErrors}
                         isFormValid={isFormValid}
                     />}
@@ -479,14 +495,21 @@ const Checkout: React.FC = () => {
                 </div>
                 
                 <OrderSummary
-                        productName={product?.dadosGerais?.nome || ''}
-                        planName={selectedPlan?.nome || ''}
+                        productName={product?.dadosProduto?.dadosGerais?.nome || ''}
+                        planName={product?.planos?.find(p => p.id === selectedPlanoId)?.nome || ''}
                         price={totalPrice}
                         discount={discount}
                         finalPrice={finalPrice}
                         couponCode={couponCode}
                         onCouponChange={setCouponCode}
                         onApplyCoupon={handleApplyCoupon}
+                        mostrarTelefoneSuporte={product?.dadosProduto?.suporteGarantia?.mostrarTelefoneSuporte || false}
+                        mostrarWhatsappSuporte={product?.dadosProduto?.suporteGarantia?.mostrarWhatsappSuporte || false}
+                        telefoneSuporte={product?.dadosProduto?.suporteGarantia?.telefoneSuporte}
+                        whatsappSuporte={product?.dadosProduto?.suporteGarantia?.whatsappSuporte}
+                        quantity={quantity}
+                        onQuantityChange={setQuantity}
+                        perguntas={product?.checkoutProduto?.perguntas || []}
                     />
                 
                 
@@ -495,4 +518,4 @@ const Checkout: React.FC = () => {
     );
 };
 
-export default Checkout; 
+export default Checkout;

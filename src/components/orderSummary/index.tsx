@@ -3,6 +3,12 @@ import styles from './styles.module.css';
 import productImg from '../../assets/img/dfCirculo.png';
 import Faq from '../../components/faq';
 
+interface Pergunta {
+    id: number;
+    pergunta: string;
+    resposta: string;
+}
+
 interface OrderSummaryProps {
     productName?: string;
     planName?: string;
@@ -12,6 +18,13 @@ interface OrderSummaryProps {
     onApplyCoupon: () => void;
     discount: number;
     finalPrice: number;
+    mostrarTelefoneSuporte?: boolean;
+    mostrarWhatsappSuporte?: boolean;
+    telefoneSuporte?: number;
+    whatsappSuporte?: number;
+    quantity: number;
+    onQuantityChange: (quantity: number) => void;
+    perguntas: Pergunta[];
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({
@@ -23,6 +36,13 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     onApplyCoupon,
     discount,
     finalPrice,
+    mostrarTelefoneSuporte,
+    mostrarWhatsappSuporte,
+    telefoneSuporte,
+    whatsappSuporte,
+    quantity,
+    onQuantityChange,
+    perguntas,
 }) => {
     const formatCurrency = (value: number) => {
         return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -37,12 +57,19 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                     <div className={styles.productImage}>
                         <img src={productImg} alt={productName} />
                     </div>
-                    
-                    <div className={styles.productDetails}>
-                        <div className={styles.detailsLeft}>
-                            <h3>{productName}</h3>
-                            <p>- {planName}</p>
+                    <div className={styles.details}>
+                        <div className={styles.productDetails}>
+                            <div className={styles.detailsLeft}>
+                                <h3>{productName}</h3>
+                                <p className={styles.divisor}>-</p>
+                                <p>{planName}</p>
+                            </div>
                             <div className={styles.productPrice}>{formatCurrency(price)}</div>
+                        </div>
+                                                <div className={styles.productQuantity}>
+                            <button className={styles.qtyBtn} onClick={() => onQuantityChange(Math.max(1, quantity - 1))}>-</button>
+                            <span>{quantity}</span>
+                            <button className={styles.qtyBtn} onClick={() => onQuantityChange(quantity + 1)}>+</button>
                         </div>
                     </div>
                 </div>
@@ -65,6 +92,10 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                         <span>Subtotal</span>
                         <span>{formatCurrency(price)}</span>
                     </div>
+                    <div className={styles.orderRow}>
+                        <span>Entrega</span>
+                        <span className={styles.deliveryInfo}>A entrega é realizada de forma  instantânea no seu e-mail após a compra</span>
+                    </div>
                     {discount > 0 && (
                     <div className={styles.orderRow}>
                             <span>Descontos</span>
@@ -76,15 +107,16 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                         <div className={styles.totalPrice}>{formatCurrency(finalPrice)}</div>
                     </div>
                 </div>
-                
-                <div className={styles.deliveryInfo}>
-                    <span>ENTREGA</span>
-                    <span>Imediata, via E-mail</span>
-                </div>
             </div>
-            <Faq />
+            <Faq 
+                mostrarTelefoneSuporte={mostrarTelefoneSuporte}
+                mostrarWhatsappSuporte={mostrarWhatsappSuporte}
+                telefoneSuporte={telefoneSuporte}
+                whatsappSuporte={whatsappSuporte}
+                perguntas={perguntas}
+            />
         </div>
     );
 };
 
-export default OrderSummary; 
+export default OrderSummary;

@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
-import { FaShoppingBag, FaCog, FaPlus, FaMinus, FaCheck, FaCopy, FaCheckCircle, FaPencilAlt, FaTrashAlt, FaSearch } from 'react-icons/fa';
+import { FaShoppingBag, FaCog, FaPlus, FaMinus, FaCheck, FaCopy, FaCheckCircle, FaPencilAlt, FaTrashAlt, FaSearch, FaShieldAlt } from 'react-icons/fa';
+import { FaTrashAlt as FaTrashAltIcon } from 'react-icons/fa';
 import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowUpFromBracket } from 'react-icons/fa6';
-import logoImg from '../../../assets/img/df.png';
+import logoImage from '../../../assets/img/df.png';
 import seloGarantiaImg from '../../../assets/img/seloGarantia.png';
 
 const NovoProduto: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
+
+    const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
+        <div className={styles.errorMessage}>
+            <FaShieldAlt /> <strong>Erro!</strong> {message}
+        </div>
+    );
 
     const [produtoData, setProdutoData] = useState({
         dadosProduto: {
@@ -75,7 +82,9 @@ const NovoProduto: React.FC = () => {
     const [filteredCupons, setFilteredCupons] = useState<any[]>([]);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
-
+    const [seloSelecionado, setSeloSelecionado] = useState<string | null>('Selo 1');
+    const [paginaVenda, setPaginaVenda] = useState('proprio');
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     useEffect(() => {
         if (produtoData.dadosProduto.cobranca.gratis) {
             setProdutoData(prev => ({
@@ -107,6 +116,7 @@ const NovoProduto: React.FC = () => {
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+    
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
@@ -202,16 +212,20 @@ const NovoProduto: React.FC = () => {
         handleInputChange(e.target.name, e.target.value);
     };
 
+    const handleSeloClick = (selo: string) => {
+        setSeloSelecionado(selo);
+    };
+
     const handleFileButtonClick = (ref: React.RefObject<HTMLInputElement | null>) => {
         ref.current?.click();
     };
 
-        const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, inputName: string) => {
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, inputName: string) => {
         if (event.target.files && event.target.files.length > 0) {
             const files = Array.from(event.target.files);
 
             for (const file of files) {
-                if (file.size > 5 * 1024 * 1024) { // 5MB
+                if (file.size > 5 * 1024 * 1024) {
                     alert(`O arquivo ${file.name} excede o tamanho máximo de 5MB.`);
                     event.target.value = '';
                     return;
@@ -235,19 +249,17 @@ const NovoProduto: React.FC = () => {
         }
     };
 
-    const handleRemoveFile = (fileNameToRemove: string, type: 'PRODUTO' | 'BANNER') => {
-        const fileIndexToRemove = mapeamentoImagens.findIndex(
+    const handleRemoveFile = (fileNameToRemove: string, type: 'PRODUTO' | 'BANNER' | 'SELO') => {
+        const indexToRemove = mapeamentoImagens.findIndex(
             m => m.nomeArquivo === fileNameToRemove && m.tipo === type
         );
-
-        if (fileIndexToRemove > -1) {
-            const newImagens = [...imagens];
-            newImagens.splice(fileIndexToRemove, 1);
+    
+        if (indexToRemove > -1) {
+            const newImagens = imagens.filter((_, index) => index !== indexToRemove);
+            const newMapeamento = mapeamentoImagens.filter((_, index) => index !== indexToRemove);
+    
             setImagens(newImagens);
-
-            const newMapeamentoImagens = [...mapeamentoImagens];
-            newMapeamentoImagens.splice(fileIndexToRemove, 1);
-            setMapeamentoImagens(newMapeamentoImagens);
+            setMapeamentoImagens(newMapeamento);
         }
     };
 
@@ -283,8 +295,13 @@ const NovoProduto: React.FC = () => {
         if (!urlPersonalizada.trim()) {
             errors.push('urlsPersonalizadas');
         }
-        if (imagens.length === 0) {
+        const hasProduto = mapeamentoImagens.some(m => m.tipo === 'PRODUTO');
+        if (!hasProduto) {
             errors.push('fotos');
+        }
+        const hasBanner = mapeamentoImagens.some(m => m.tipo === 'BANNER');
+        if (!hasBanner) {
+            errors.push('banner');
         }
 
         setValidationErrors(errors);
@@ -294,9 +311,22 @@ const NovoProduto: React.FC = () => {
     const handleSave = async () => {
         setHasAttemptedSave(true);
         if (!validateProductData()) {
-            console.log('Validação falhou', validationErrors);
-            return;
-        }
+        const errorMap: { [key: string]: string } = {
+            dadosGerais: 'Preencha todos os campos em "Dados Gerais".',
+            formatoCategoria: 'Selecione o formato e a categoria do produto.',
+            cobranca: 'O preço do produto deve ser maior que zero.',
+            suporteGarantia: 'O e-mail de suporte é obrigatório.',
+            urlsPersonalizadas: 'A URL personalizada é obrigatória.',
+            banner: 'É necessário adicionar uma imagem de banner.',
+            fotos: 'É necessário adicionar ao menos uma foto do produto.'
+        };
+
+        const errorMessages = validationErrors.map(error => errorMap[error] || 'Erro ao salvar produto.');
+        
+        setErrorMessage(errorMessages[0]);
+        setTimeout(() => setErrorMessage(null), 5000);
+        return;
+    }
 
         const formData = new FormData();
         
@@ -478,6 +508,20 @@ const NovoProduto: React.FC = () => {
         });
     };
 
+    const handleDeletePergunta = (index: number) => {
+        setProdutoData(prev => {
+            const novasPerguntas = [...prev.checkoutProduto.perguntas];
+            novasPerguntas.splice(index, 1);
+            return {
+                ...prev,
+                checkoutProduto: {
+                    ...prev.checkoutProduto,
+                    perguntas: novasPerguntas
+                }
+            };
+        });
+    };
+
     const handleRemovePergunta = (index: number) => {
         setProdutoData(prev => {
             const novasPerguntas = prev.checkoutProduto.perguntas.filter((_, i) => i !== index);
@@ -569,12 +613,13 @@ const NovoProduto: React.FC = () => {
 
     return (
         <div className={styles.mainContainer}>
+            {errorMessage && <ErrorMessage message={errorMessage} />}
             <header className={styles.mainHeader}>
                 <div className={styles.headerLeft}>
                     <button id="mobileMenuBtn" className={styles.mobileMenuBtn} onClick={toggleSidebar}>
                         <FaBars />
                     </button>
-                    <div id="logo" style={{ backgroundImage: `url(${logoImg})` }}></div>
+                    <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
                     <button onClick={handleLogout} className={styles.exitButton}>
@@ -1057,77 +1102,23 @@ const NovoProduto: React.FC = () => {
                                                 <label className={styles.label} htmlFor="email">
                                                     Selo de Garantia
                                                 </label>
-                                                <div className={styles.stampGroupBody}>
-                                                    <div className={`${styles.stamp} ${styles.active}`}>
-                                                        <div className={styles.stampHead}>Selo 1</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
+ e na                                                 <div className={styles.stampGroupBody}>
+                                                    {['Selo 1', 'Selo 2', 'Selo 3', 'Selo 4', 'Selo 5', 'Selo 6', 'Selo 7'].map(selo => (
+                                                        <div
+                                                            key={selo}
+                                                            className={`${styles.stamp} ${seloSelecionado === selo ? styles.active : ''}`}
+                                                            onClick={() => handleSeloClick(selo)}
+                                                        >
+                                                            <div className={styles.stampHead}>{selo}</div>
+                                                            <div className={styles.stampBody}>
+                                                                <img
+                                                                    className={styles.stampImg}
+                                                                    src={seloGarantiaImg}
+                                                                    alt="Selo de Garantia"
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 2</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 3</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 4</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 5</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 6</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 7</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
@@ -1153,8 +1144,10 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="dadosProduto.urlPersonalizada"
-                                                            defaultValue="proprio"
+                                                            name="paginaVenda"
+                                                            value="proprio"
+                                                            checked={paginaVenda === 'proprio'}
+                                                            onChange={(e) => setPaginaVenda(e.target.value)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Meu próprio site
@@ -1162,8 +1155,10 @@ const NovoProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="dadosProduto.urlPersonalizada"
-                                                            defaultValue="instagram"
+                                                            name="paginaVenda"
+                                                            value="instagram"
+                                                            checked={paginaVenda === 'instagram'}
+                                                            onChange={(e) => setPaginaVenda(e.target.value)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Instagram
@@ -1174,7 +1169,7 @@ const NovoProduto: React.FC = () => {
                                         <div className={styles.dataCol5}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="instagram">
-                                                    URL da página do perfil do Instagram
+                                                    {paginaVenda === 'proprio' ? 'URL da sua página de vendas' : 'URL da página do perfil do Instagram'}
                                                 </label>
                                                 <input type="text" name="dadosProduto.urlPersonalizada" className={styles.input} value={produtoData.dadosProduto.urlPersonalizada} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
@@ -1219,7 +1214,7 @@ const NovoProduto: React.FC = () => {
                                             <div key={index} className={styles.fileItem}>
                                                 <span>{file.nomeArquivo}</span>
                                                 <button onClick={() => handleRemoveFile(file.nomeArquivo, 'PRODUTO')} className={styles.removeFileBtn}>
-                                                    <i className="fa fa-trash"></i>
+                                                    <FaTrashAlt />
                                                 </button>
                                             </div>
                                         ))}
@@ -1243,6 +1238,39 @@ const NovoProduto: React.FC = () => {
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Banner</h2>
+                                    {hasAttemptedSave && !validationErrors.includes('banner') && <FaCheckCircle className={styles.checkIcon} />}
+                                </div>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('banner') ? styles.missing : ''}`}>
+                                    <div className={styles.selectDocs}>
+                                        <button className={styles.fileBtn} onClick={() => handleFileButtonClick(bannerFileInputRef)}>
+                                            <FaArrowUpFromBracket /> Selecionar Arquivo
+                                        </button>
+                                        <input
+                                            type="file"
+                                            ref={bannerFileInputRef}
+                                            onChange={(e) => handleFileChange(e, 'banner')}
+                                            style={{ display: "none" }}
+                                            accept="image/*"
+                                        />
+                                        <p className={styles.maxLenght}>Tamanho Máximo: 5MB. Para melhor resultado utilize imagens no tamanho 999 x 99</p>
+                                    </div>
+                                    <div className={styles.fileList}>
+                                        {mapeamentoImagens.filter(m => m.tipo === 'BANNER').map((file, index) => (
+                                            <div key={index} className={styles.fileItem}>
+                                                <span>{file.nomeArquivo}</span>
+                                                <button onClick={() => handleRemoveFile(file.nomeArquivo, 'BANNER')} className={styles.removeFileBtn}>
+                                                    <FaTrashAlt />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {hasAttemptedSave && validationErrors.includes('banner') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
+                                </div>
+                            </div>
+
+                            <div className={styles.contentCard}>
+                                <div className={styles.contentCardHeader}>
+                                    <h2 className={styles.contentCardTitle}>Exibições</h2>
                                 </div>
                                 <div className={styles.contentCardBody}>
                                     <div className={styles.selectDocs}>
@@ -1330,32 +1358,39 @@ const NovoProduto: React.FC = () => {
                                 <div className={styles.contentCard}>
                                     <div className={styles.contentCardHeader}>
                                         <h2 className={styles.contentCardTitle}>Perguntas e Respostas (FAQ)</h2>
-                                        <button className={styles.btnAddFaq} onClick={handleAddPergunta}><FaPlus /></button>
+                                        <button type="button" className={styles.btnAddFaq} onClick={handleAddPergunta}><FaPlus /></button>
                                     </div>
                                     <div className={styles.contentCardBody}>
                                         {produtoData.checkoutProduto.perguntas.map((item, index) => (
-                                            <div key={item.id || index} className={styles.dataCol8} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
-                                                <div className={styles.dataCol}>
-                                                    <div className={styles.inputGroup}>
-                                                        <label className={styles.label}>Pergunta</label>
-                                                        <input 
-                                                            type="text" 
-                                                            className={styles.input} 
-                                                            value={item.pergunta} 
-                                                            onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
-                                                        />
+                                            <div key={item.id || index} className={styles.faqItemContainer}>
+                                                <div className={styles.faqInputs}>
+                                                    <div className={styles.dataCol}>
+                                                        <div className={styles.inputGroup}>
+                                                            <label className={styles.label}>Pergunta</label>
+                                                            <input 
+                                                                type="text" 
+                                                                className={styles.input} 
+                                                                value={item.pergunta} 
+                                                                onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className={styles.dataCol}>
+                                                        <div className={styles.inputGroup}>
+                                                            <label className={styles.label}>Resposta</label>
+                                                            <input
+                                                                type="text"
+                                                                className={styles.input}
+                                                                value={item.resposta}
+                                                                onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className={styles.dataCol}>
-                                                    <div className={styles.inputGroup}>
-                                                        <label className={styles.label}>Resposta</label>
-                                                        <input
-                                                            type="text"
-                                                            className={styles.input}
-                                                            value={item.resposta}
-                                                            onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
-                                                        />
-                                                    </div>
+                                                <div className={styles.faqActions}>
+                                                    <button type="button" onClick={() => handleDeletePergunta(index)} className={styles.deleteButton}>
+                                                        <FaTrashAltIcon size={16} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}

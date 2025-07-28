@@ -13,6 +13,7 @@ interface Product {
     valor: number;
     status: string;
     imagens: string;
+    vendasTotais: number;
 }
 
 interface Page<T> {
@@ -45,10 +46,23 @@ const MeusProdutos = () => {
     const productsToDisplay = allProducts
         .filter(p => showInactive || p.status === 'ATIVO' || p.id === recentlyChangedId)
         .sort((a, b) => {
-            if (a.status === b.status) {
-                return b.id - a.id;
+            if (a.status !== b.status && !showInactive) {
+                return a.status === 'ATIVO' ? -1 : 1;
             }
-            return a.status === 'ATIVO' ? -1 : 1;
+            switch (orderBy) {
+                case 'Nome (A-Z)':
+                    return a.nome.localeCompare(b.nome);
+                case 'Nome (Z-A)':
+                    return b.nome.localeCompare(a.nome);
+                case 'Maior Preço':
+                    return b.valor - a.valor;
+                case 'Menor Preço':
+                    return a.valor - b.valor;
+                case 'Mais Vendidos':
+                    return b.vendasTotais - a.vendasTotais;
+                default:
+                    return b.id - a.id;
+            }
         });
 
     const totalPages = Math.ceil(productsToDisplay.length / productsPerPage);
@@ -285,12 +299,14 @@ const MeusProdutos = () => {
                                 <span className={styles.orderByLabel}>Ordenar por :</span>
                                 <span className={styles.orderByValue}>{orderBy}</span>
                                 <FaChevronDown className={styles.selectIcon} />
-                                <select className={styles.filterSelect} aria-label="Ordenar por" onChange={handleOrderByChange}>
-                                    <option value="data">Novos</option>
-                                    <option value="valor">Mais Caros</option>
-                                    <option value="cliente">Mais Baratos</option>
-                                    <option value="cliente">Mais Vendidos</option>
-                                </select>
+                                <select className={styles.filterSelect} aria-label="Ordenar por" value={orderBy} onChange={handleOrderByChange}>
+                                      <option>Novos</option>
+                                      <option>Mais Vendidos</option>
+                                      <option>Nome (A-Z)</option>
+                                      <option>Nome (Z-A)</option>
+                                      <option>Maior Preço</option>
+                                      <option>Menor Preço</option>
+                                   </select>
                             </div>
                         </div>
                     </div>
@@ -306,12 +322,12 @@ const MeusProdutos = () => {
                                         Nome do Produto{" "}
                                         <FaArrowRightArrowLeft style={{ transform: "scale(1.5) rotate(90deg)" }} />
                                     </th>
-                                    <th className={styles.sortable}>Código</th>
+                                    <th>Código</th>
                                     <th className={styles.sortable}>Preço</th>
-                                    <th className={styles.sortable}>Afiliados</th>
+                                    <th>Afiliados</th>
                                     <th className={styles.sortable}>Vendas</th>
                                     <th className={`${styles.sortable} ${styles.textCenter}`}>Status</th>
-                                    <th className={`${styles.sortable} ${styles.textCenter}`}>Ações</th>
+                                    <th className={styles.textCenter}>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -326,7 +342,7 @@ const MeusProdutos = () => {
                                         <td>{product.codigo ?? 'N/A'}</td>
                                         <td>{`R$ ${product.valor?.toFixed(2) ?? '0.00'}`}</td>
                                         <td>0</td>
-                                        <td>0</td>
+                                        <td>{product.vendasTotais ?? 0}</td>
                                         <td className={`${styles.textCenter} ${styles.statusCell}`}>
                                             <label className={styles.switch}>
                                                 <input
@@ -371,4 +387,4 @@ const MeusProdutos = () => {
     );
 };
 
-export default MeusProdutos; 
+export default MeusProdutos;

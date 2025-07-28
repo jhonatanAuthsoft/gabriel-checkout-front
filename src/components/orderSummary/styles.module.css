@@ -1,5 +1,6 @@
 .orderSummary {
     background-color: #F7FAFC;
+    max-width: 500px;
     border-radius: 8px;
     height: 700px;
     overflow-y: auto;
@@ -52,28 +53,45 @@
 .productDetails {
     flex: 1;
     display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
+    flex-direction: column;
+    justify-content: start;
+    align-items: start;
 }
 
 .detailsLeft {
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: center;
     align-items: flex-start;
     font-size: 14px;
     margin-top: 15px;
 }
 
-.productDetails h3 {
-    font-size: 13px;
+.productDetails h3, .productDetails p {
+    font-size: 1rem;
     margin-bottom: 5px;
     font-family: 'Poppins Regular', sans-serif;
+    font-weight: 600;
+}
+
+.details {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.productQuantity {
+    gap: 10px;
+}
+
+.divisor {
+    margin: 0 6px 0 6px;
 }
 
 .productPrice {
     font-family: 'Poppins Bold', sans-serif;
+    font-size: .85rem;
 }
 
 .productQuantity {
@@ -83,8 +101,8 @@
 }
 
 .qtyBtn {
-    width: 24px;
-    height: 24px;
+    width: 28px;
+    height: 28px;
     border-radius: 4px;
     background-color: #E2E8F0;
     border: 1px solid #E2E8F0;
@@ -150,13 +168,14 @@
     justify-content: space-between;
     margin-bottom: 5px;
     font-size: 13px;
+    gap: 30px;
 }
 
 .deliveryInfo {
-    font-size: 11px;
+    font-size: 12px;
     color: #666;
     text-align: right;
-    max-width: 200px;
+    max-width: 80%;
     font-family: 'Poppins Bold', sans-serif;
 }
 

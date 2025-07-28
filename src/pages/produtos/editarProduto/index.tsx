@@ -1,14 +1,21 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
-import { FaShoppingBag, FaCog, FaPlus, FaMinus, FaCheck, FaCopy, FaCheckCircle, FaPencilAlt, FaTrashAlt, FaSearch } from 'react-icons/fa';
+import { FaShoppingBag, FaCog, FaPlus, FaMinus, FaCheck, FaCopy, FaCheckCircle, FaPencilAlt, FaTrashAlt, FaSearch, FaShieldAlt } from 'react-icons/fa';
+import { FaTrashAlt as FaTrashAltIcon } from 'react-icons/fa';
 import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowUpFromBracket } from 'react-icons/fa6';
-import logoImg from '../../../assets/img/df.png';
+import logoImage from '../../../assets/img/df.png';
 import seloGarantiaImg from '../../../assets/img/seloGarantia.png';
 
 const EditarProduto: React.FC = () => {
     const { produtoId } = useParams<{ produtoId: string }>();
     const navigate = useNavigate();
+
+    const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
+        <div className={styles.errorMessage}>
+            <FaShieldAlt /> <strong>Erro!</strong> {message}
+        </div>
+    );
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
@@ -63,7 +70,8 @@ const EditarProduto: React.FC = () => {
     });
     
     const [imagens, setImagens] = useState<File[]>([]);
-    const [mapeamentoImagens, setMapeamentoImagens] = useState<{ nomeArquivo: string, tipo: string }[]>([]);
+    const [existingImages, setExistingImages] = useState<any[]>([]);
+    const [mapeamentoImagens, setMapeamentoImagens] = useState<{ file: File, type: string }[]>([]);
     const [imagensParaDeletar, setImagensParaDeletar] = useState<number[]>([]);
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [activeSubMenus, setActiveSubMenus] = useState<string[]>(['Produtos']);
@@ -81,7 +89,9 @@ const EditarProduto: React.FC = () => {
     const [filteredCupons, setFilteredCupons] = useState<any[]>([]);
     const [validationErrors, setValidationErrors] = useState<string[]>([]);
     const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
-
+    const [seloSelecionado, setSeloSelecionado] = useState<string | null>('Selo 1');
+    const [paginaVenda, setPaginaVenda] = useState('proprio');
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     useEffect(() => {
         if (produtoData.dadosProduto.cobranca.gratis) {
             setProdutoData(prev => ({
@@ -109,10 +119,21 @@ const EditarProduto: React.FC = () => {
         }
     }, [newCupom.tipoDesconto]);
 
+    useEffect(() => {
+        if (newPlano.gratis) {
+            setNewPlano(prev => ({
+                ...prev,
+                preco: 0
+            }));
+        }
+    }, [newPlano.gratis]);
+
     const overlayRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+    
+
 
     useEffect(() => {
         const lowerCupomFilter = cupomFilter.toLowerCase();
@@ -162,6 +183,10 @@ const EditarProduto: React.FC = () => {
                     planos: data.dados.planos || prevState.planos,
                     cupom: data.dados.cupom || prevState.cupom,
                 }));
+
+                if (data.dados.imagens) {
+                    setExistingImages(data.dados.imagens);
+                }
             } catch (error) {
                 console.error("Erro ao buscar produto:", error);
             }
@@ -197,6 +222,34 @@ const EditarProduto: React.FC = () => {
         setSidebarActive(prev => !prev);
     };
 
+    const handleFotosChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            const newFiles = Array.from(event.target.files);
+            const newImagens = [...imagens, ...newFiles];
+            setImagens(newImagens);
+
+            const newMapeamento = newFiles.map(file => ({ nomeArquivo: file.name, tipo: 'FOTO' }));
+            setMapeamentoImagens(prevMapeamento => [...prevMapeamento, ...newFiles.map(file => ({ file, type: 'FOTO' }))]);
+        }
+    };
+
+
+
+    const handleDeletarImagem = (id: number | string, isExisting: boolean) => {
+        if (isExisting) {
+            setImagensParaDeletar(prev => [...prev, id as number]);
+            setExistingImages(prev => prev.filter(img => img.id !== id));
+        } else {
+            const index = id as number;
+            const fileToRemove = imagens[index];
+            const newImagens = imagens.filter((_, i) => i !== index);
+            setImagens(newImagens);
+
+            const newMapeamento = mapeamentoImagens.filter(m => m.file.name !== fileToRemove.name);
+            setMapeamentoImagens(newMapeamento);
+        }
+    };
+
     const toggleSubMenu = (menu: string) => {
         setActiveSubMenus(prev =>
             prev.includes(menu) ? prev.filter(m => m !== menu) : [...prev, menu]
@@ -211,53 +264,49 @@ const EditarProduto: React.FC = () => {
         handleInputChange(e.target.name, e.target.value);
     };
 
+    const handleSeloClick = (selo: string) => {
+        setSeloSelecionado(selo);
+    };
+
     const handleFileButtonClick = (ref: React.RefObject<HTMLInputElement | null>) => {
         ref.current?.click();
     };
 
-        const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, inputName: string) => {
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, type: 'PRODUTO' | 'BANNER' | 'SELO') => {
         if (event.target.files && event.target.files.length > 0) {
             const files = Array.from(event.target.files);
 
-            for (const file of files) {
-                if (file.size > 5 * 1024 * 1024) { // 5MB
-                    alert(`O arquivo ${file.name} excede o tamanho máximo de 5MB.`);
-                    event.target.value = '';
-                    return;
+            const validFiles = files.filter(file => {
+                if (file.size > 5 * 1024 * 1024) { 
+                    alert(`O arquivo ${file.name} não pode ter mais de 5MB.`);
+                    return false;
                 }
+                return true;
+            });
+
+            if (validFiles.length === 0) {
+                event.target.value = '';
+                return;
             }
 
-            const newMapeamento = files.map(file => ({
-                nomeArquivo: file.name,
-                tipo: inputName.toUpperCase()
-            }));
+            if (type === 'BANNER' || type === 'SELO') {
+                const otherMapeamento = mapeamentoImagens.filter(item => item.type !== type);
+                const newImage = { file: validFiles[0], type };
+                setMapeamentoImagens([...otherMapeamento, newImage]);
 
-            if (inputName === 'banner') {
-                const otherImages = imagens.filter((_, index) => mapeamentoImagens[index].tipo !== 'BANNER');
-                const otherMapeamentos = mapeamentoImagens.filter(m => m.tipo !== 'BANNER');
-                setImagens([...otherImages, ...files]);
-                setMapeamentoImagens([...otherMapeamentos, ...newMapeamento]);
+                const otherFiles = otherMapeamento.map(item => item.file);
+                setImagens([...otherFiles, validFiles[0]]);
             } else {
-                setImagens(prev => [...prev, ...files]);
-                setMapeamentoImagens(prev => [...prev, ...newMapeamento]);
+                const newMapeamento = validFiles.map(file => ({ file, type: 'PRODUTO' as const }));
+                setMapeamentoImagens(prevMapeamento => [...prevMapeamento, ...newMapeamento]);
+                setImagens(prevImagens => [...prevImagens, ...validFiles]);
             }
         }
     };
 
-    const handleRemoveFile = (fileNameToRemove: string, type: 'PRODUTO' | 'BANNER') => {
-        const fileIndexToRemove = mapeamentoImagens.findIndex(
-            m => m.nomeArquivo === fileNameToRemove && m.tipo === type
-        );
-
-        if (fileIndexToRemove > -1) {
-            const newImagens = [...imagens];
-            newImagens.splice(fileIndexToRemove, 1);
-            setImagens(newImagens);
-
-            const newMapeamentoImagens = [...mapeamentoImagens];
-            newMapeamentoImagens.splice(fileIndexToRemove, 1);
-            setMapeamentoImagens(newMapeamentoImagens);
-        }
+    const handleRemoveFile = (fileToRemove: File) => {
+        setImagens(prev => prev.filter(f => f.name !== fileToRemove.name));
+        setMapeamentoImagens(prev => prev.filter(m => m.file.name !== fileToRemove.name));
     };
 
     const handleInputChange = (name: string, value: any) => {
@@ -273,42 +322,82 @@ const EditarProduto: React.FC = () => {
         });
     };
 
-    const validateProductData = () => {
-        const errors: string[] = [];
-        const { dadosGerais, formatoCategoria, cobranca, suporteGarantia, urlPersonalizada } = produtoData.dadosProduto;
-
-        if (!dadosGerais.nome.trim()) {
-            errors.push('dadosGerais');
-        }
-        if (!formatoCategoria.formato || !formatoCategoria.categoria) {
-            errors.push('formatoCategoria');
-        }
-        if (!cobranca.gratis && cobranca.preco <= 0) {
-            errors.push('cobranca');
-        }
-        if (!suporteGarantia.email.trim()) {
-            errors.push('suporteGarantia');
-        }
-        if (!urlPersonalizada.trim()) {
-            errors.push('urlsPersonalizadas');
-        }
-
-        setValidationErrors(errors);
-        return errors.length === 0;
+    const handleDeletePergunta = (index: number) => {
+        const newPerguntas = [...produtoData.checkoutProduto.perguntas];
+        newPerguntas.splice(index, 1);
+        setProdutoData({
+            ...produtoData,
+            checkoutProduto: {
+                ...produtoData.checkoutProduto,
+                perguntas: newPerguntas,
+            },
+        });
     };
 
-    const handleSave = async () => {
-        setHasAttemptedSave(true);
-        if (!validateProductData()) {
-            console.log('Validação falhou', validationErrors);
-            return;
-        }
+const validateProductData = () => {
+    const errors: string[] = [];
+    const { dadosGerais, formatoCategoria, cobranca, suporteGarantia, urlPersonalizada } = produtoData.dadosProduto;
+
+    if (!dadosGerais.nome.trim()) {
+        errors.push('dadosGerais');
+    }
+    if (!formatoCategoria.formato || !formatoCategoria.categoria) {
+        errors.push('formatoCategoria');
+    }
+    if (!cobranca.gratis && cobranca.preco <= 0) {
+        errors.push('cobranca');
+    }
+    if (!suporteGarantia.email.trim()) {
+        errors.push('suporteGarantia');
+    }
+    if (!urlPersonalizada.trim()) {
+        errors.push('urlsPersonalizadas');
+    }
+    const hasProduto = existingImages.some(img => img.tipoImagem === 'PRODUTO') || mapeamentoImagens.some(item => item.type === 'PRODUTO');
+    if (!hasProduto) {
+        errors.push('fotos');
+    }
+    const hasBanner = existingImages.some(img => img.tipoImagem === 'BANNER') || mapeamentoImagens.some(item => item.type === 'BANNER');
+    if (!hasBanner) {
+        errors.push('banner');
+    }
+
+    setValidationErrors(errors);
+    return errors.length === 0;
+};
+
+const handleSave = async () => {
+    setHasAttemptedSave(true);
+    if (!validateProductData()) {
+        const errorMap: { [key: string]: string } = {
+            dadosGerais: 'Preencha todos os campos em "Dados Gerais".',
+            formatoCategoria: 'Selecione o formato e a categoria do produto.',
+            cobranca: 'O preço do produto deve ser maior que zero.',
+            suporteGarantia: 'O e-mail de suporte é obrigatório.',
+            urlsPersonalizadas: 'A URL personalizada é obrigatória.',
+            banner: 'É necessário adicionar uma imagem de banner.',
+            fotos: 'É necessário adicionar ao menos uma foto do produto.'
+        };
+
+        const errorMessages = validationErrors.map(error => errorMap[error] || 'Erro ao salvar produto.');
+        
+        setErrorMessage(errorMessages[0]);
+        setTimeout(() => setErrorMessage(null), 5000);
+        return;
+    }
 
         const formData = new FormData();
         
+        const mapeamentoParaEnvio = mapeamentoImagens
+            .filter(item => item.type !== 'SELO')
+            .map(item => ({
+                nomeArquivo: item.file.name,
+                tipo: item.type
+            }));
+
         const dadosPayload = {
             dados: produtoData,
-            mapeamentoImagens: mapeamentoImagens,
+            mapeamentoImagens: mapeamentoParaEnvio,
             imagensParaDeletar: imagensParaDeletar
         };
 
@@ -607,12 +696,13 @@ const EditarProduto: React.FC = () => {
 
     return (
         <div className={styles.mainContainer}>
+            {errorMessage && <ErrorMessage message={errorMessage} />}
             <header className={styles.mainHeader}>
                 <div className={styles.headerLeft}>
                     <button id="mobileMenuBtn" className={styles.mobileMenuBtn} onClick={toggleSidebar}>
                         <FaBars />
                     </button>
-                    <div id="logo" style={{ backgroundImage: `url(${logoImg})` }} />
+                    <div className={styles.logo} style={{ backgroundImage: `url(${logoImage})` }} />
                 </div>
                 <div className={styles.headerActions}>
                     <button onClick={handleLogout} className={styles.exitButton}>
@@ -1096,76 +1186,22 @@ const EditarProduto: React.FC = () => {
                                                     Selo de Garantia
                                                 </label>
                                                 <div className={styles.stampGroupBody}>
-                                                    <div className={`${styles.stamp} ${styles.active}`}>
-                                                        <div className={styles.stampHead}>Selo 1</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
+                                                    {['Selo 1', 'Selo 2', 'Selo 3', 'Selo 4', 'Selo 5', 'Selo 6', 'Selo 7'].map(selo => (
+                                                        <div
+                                                            key={selo}
+                                                            className={`${styles.stamp} ${seloSelecionado === selo ? styles.active : ''}`}
+                                                            onClick={() => handleSeloClick(selo)}
+                                                        >
+                                                            <div className={styles.stampHead}>{selo}</div>
+                                                            <div className={styles.stampBody}>
+                                                                <img
+                                                                    className={styles.stampImg}
+                                                                    src={seloGarantiaImg}
+                                                                    alt="Selo de Garantia"
+                                                                />
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 2</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 3</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 4</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 5</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 6</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                    <div className={styles.stamp}>
-                                                        <div className={styles.stampHead}>Selo 7</div>
-                                                        <div className={styles.stampBody}>
-                                                            <img
-                                                                className={styles.stampImg}
-                                                                src={seloGarantiaImg}
-                                                                alt="Selo de Garantia"
-                                                            />
-                                                        </div>
-                                                    </div>
+                                                    ))}
                                                 </div>
                                             </div>
                                         </div>
@@ -1191,8 +1227,10 @@ const EditarProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="dadosProduto.urlPersonalizada"
-                                                            defaultValue="proprio"
+                                                            name="paginaVenda"
+                                                            value="proprio"
+                                                            checked={paginaVenda === 'proprio'}
+                                                            onChange={(e) => setPaginaVenda(e.target.value)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Meu próprio site
@@ -1200,8 +1238,10 @@ const EditarProduto: React.FC = () => {
                                                     <label className={styles.radioButton}>
                                                         <input
                                                             type="radio"
-                                                            name="dadosProduto.urlPersonalizada"
-                                                            defaultValue="instagram"
+                                                            name="paginaVenda"
+                                                            value="instagram"
+                                                            checked={paginaVenda === 'instagram'}
+                                                            onChange={(e) => setPaginaVenda(e.target.value)}
                                                         />
                                                         <span className={styles.radio} />
                                                         Instagram
@@ -1212,7 +1252,7 @@ const EditarProduto: React.FC = () => {
                                         <div className={styles.dataCol5}>
                                             <div className={styles.inputGroup}>
                                                 <label className={styles.label} htmlFor="instagram">
-                                                    URL da página do perfil do Instagram
+                                                    {paginaVenda === 'proprio' ? 'URL da sua página de vendas' : 'URL da página do perfil do Instagram'}
                                                 </label>
                                                 <input type="text" name="dadosProduto.urlPersonalizada" className={styles.input} value={produtoData.dadosProduto.urlPersonalizada} onChange={(e) => handleInputChange(e.target.name, e.target.value)} />
                                             </div>
@@ -1235,9 +1275,9 @@ const EditarProduto: React.FC = () => {
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Fotos</h2>
-                                    <FaCheckCircle className={styles.checkIcon} />
+                                    {hasAttemptedSave && !validationErrors.includes('fotos') && <FaCheckCircle className={styles.checkIcon} />}
                                 </div>
-                                <div className={styles.contentCardBody}>
+                                <div className={`${styles.contentCardBody} ${hasAttemptedSave && validationErrors.includes('fotos') ? styles.missing : ''}`}>
                                     <div className={styles.selectDocs}>
                                         <button className={styles.fileBtn} onClick={() => handleFileButtonClick(fotosFileInputRef)}>
                                             <FaArrowUpFromBracket /> Selecionar Arquivos
@@ -1245,24 +1285,40 @@ const EditarProduto: React.FC = () => {
                                         <input
                                             type="file"
                                             ref={fotosFileInputRef}
-                                            onChange={(e) => handleFileChange(e, 'produto')}
+                                            onChange={(e) => handleFileChange(e, 'PRODUTO')}
                                             style={{ display: "none" }}
                                             multiple
                                             accept="image/*"
                                         />
                                         <p className={styles.maxLenght}>Tamanho Máximo: 5MB</p>
                                     </div>
-                                    <div className={styles.fileList}>
-                                        {mapeamentoImagens.filter(m => m.tipo === 'PRODUTO').map((file, index) => (
-                                            <div key={index} className={styles.fileItem}>
-                                                <span>{file.nomeArquivo}</span>
-                                                <button onClick={() => handleRemoveFile(file.nomeArquivo, 'PRODUTO')} className={styles.removeFileBtn}>
-                                                    <i className="fa fa-trash"></i>
+                                    <div className="flex flex-col gap-2 mt-4">
+                                        {existingImages.filter(img => img.tipoImagem === 'PRODUTO').map((imagem) => (
+                                            <div key={imagem.id} className={`${styles.fileItem} flex items-center justify-between p-2 border rounded-lg`}>
+                                                <span className={styles.fileName}>{imagem.nomeImagem}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeletarImagem(imagem.id, true)}
+                                                    className={`${styles.deleteButton} bg-red-500 text-white rounded-full p-1`}
+                                                >
+                                                    <FaTrashAlt size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {mapeamentoImagens.filter(item => item.type === 'PRODUTO').map((item, index) => (
+                                            <div key={index} className={`${styles.fileItem} flex items-center justify-between p-2 border rounded-lg`}>
+                                                <span className={styles.fileName}>{item.file.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveFile(item.file)}
+                                                    className={`${styles.deleteButton} bg-red-500 text-white rounded-full p-1`}
+                                                >
+                                                    <FaTrashAlt size={16} />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
+                                    {hasAttemptedSave && validationErrors.includes('fotos') && <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>}
                                 </div>
                             </div>
                             <div className={styles.paginationContainer}>
@@ -1288,25 +1344,41 @@ const EditarProduto: React.FC = () => {
                                         <input
                                             type="file"
                                             ref={bannerFileInputRef}
-                                            onChange={(e) => handleFileChange(e, 'banner')}
+                                            onChange={(e) => handleFileChange(e, 'BANNER')}
                                             style={{ display: "none" }}
                                             accept="image/*"
                                         />
                                         <p className={styles.maxLenght}>Tamanho Máximo: 5MB. Para melhor resultado utilize imagens no tamanho 999 x 99</p>
                                     </div>
-                                    <div className={styles.fileList}>
-                                        {mapeamentoImagens.filter(m => m.tipo === 'BANNER').map((file, index) => (
-                                            <div key={index} className={styles.fileItem}>
-                                                <span>{file.nomeArquivo}</span>
-                                                <button onClick={() => handleRemoveFile(file.nomeArquivo, 'BANNER')} className={styles.removeFileBtn}>
-                                                    <i className="fa fa-trash"></i>
+                                    <div className="flex flex-col gap-2 mt-4">
+                                        {existingImages.filter(img => img.tipoImagem === 'BANNER').map((imagem) => (
+                                            <div key={imagem.id} className={`${styles.fileItem} flex items-center justify-between p-2 border rounded-lg`}>
+                                                <span className={styles.fileName}>{imagem.nomeImagem}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleDeletarImagem(imagem.id, true)}
+                                                    className={`${styles.deleteButton} bg-red-500 text-white rounded-full p-1`}
+                                                >
+                                                    <FaTrashAlt size={16} />
+                                                </button>
+                                            </div>
+                                        ))}
+                                        {mapeamentoImagens.filter(item => item.type === 'BANNER').map((item, index) => (
+                                            <div key={index} className={`${styles.fileItem} flex items-center justify-between p-2 border rounded-lg`}>
+                                                <span className={styles.fileName}>{item.file.name}</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleRemoveFile(item.file)}
+                                                    className={`${styles.deleteButton} bg-red-500 text-white rounded-full p-1`}
+                                                >
+                                                    <FaTrashAlt size={16} />
                                                 </button>
                                             </div>
                                         ))}
                                     </div>
-                                    <p className={styles.missingText}>Campos obrigatórios não preenchidos</p>
                                 </div>
                             </div>
+
                             <div className={styles.contentCard}>
                                 <div className={styles.contentCardHeader}>
                                     <h2 className={styles.contentCardTitle}>Exibições</h2>
@@ -1366,32 +1438,39 @@ const EditarProduto: React.FC = () => {
                                 <div className={styles.contentCard}>
                                     <div className={styles.contentCardHeader}>
                                         <h2 className={styles.contentCardTitle}>Perguntas e Respostas (FAQ)</h2>
-                                        <button className={styles.btnAddFaq} onClick={handleAddPergunta}><FaPlus /></button>
+                                        <button type="button" className={styles.btnAddFaq} onClick={handleAddPergunta}><FaPlus /></button>
                                     </div>
                                     <div className={styles.contentCardBody}>
                                         {produtoData.checkoutProduto.perguntas.map((item, index) => (
-                                            <div key={item.id || index} className={styles.dataCol8} style={{ borderBottom: '1px solid #eee', paddingBottom: '15px', marginBottom: '15px' }}>
-                                                <div className={styles.dataCol}>
-                                                    <div className={styles.inputGroup}>
-                                                        <label className={styles.label}>Pergunta</label>
-                                                        <input 
-                                                            type="text" 
-                                                            className={styles.input} 
-                                                            value={item.pergunta} 
-                                                            onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
-                                                        />
+                                            <div key={item.id || index} className={styles.faqItemContainer}>
+                                                <div className={styles.faqInputs}>
+                                                    <div className={styles.dataCol}>
+                                                        <div className={styles.inputGroup}>
+                                                            <label className={styles.label}>Pergunta</label>
+                                                            <input 
+                                                                type="text" 
+                                                                className={styles.input} 
+                                                                value={item.pergunta} 
+                                                                onChange={(e) => handleUpdatePergunta(index, 'pergunta', e.target.value)} 
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                    <div className={styles.dataCol}>
+                                                        <div className={styles.inputGroup}>
+                                                            <label className={styles.label}>Resposta</label>
+                                                            <input
+                                                                type="text"
+                                                                className={styles.input}
+                                                                value={item.resposta}
+                                                                onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
+                                                            />
+                                                        </div>
                                                     </div>
                                                 </div>
-                                                <div className={styles.dataCol}>
-                                                    <div className={styles.inputGroup}>
-                                                        <label className={styles.label}>Resposta</label>
-                                                        <input
-                                                            type="text"
-                                                            className={styles.input}
-                                                            value={item.resposta}
-                                                            onChange={(e) => handleUpdatePergunta(index, 'resposta', e.target.value)}
-                                                        />
-                                                    </div>
+                                                <div className={styles.faqActions}>
+                                                    <button type="button" onClick={() => handleDeletePergunta(index)} className={styles.deleteButton}>
+                                                        <FaTrashAltIcon size={16} />
+                                                    </button>
                                                 </div>
                                             </div>
                                         ))}
@@ -1483,7 +1562,7 @@ const EditarProduto: React.FC = () => {
                                                         <label className={styles.label} htmlFor="preco">
                                                             Preço
                                                 </label>
-                                                        <input type="number" name="preco" className={styles.input} value={newPlano.preco} onChange={(e) => setNewPlano(p => ({...p, preco: parseFloat(e.target.value)}))} />
+                                                        <input type="number" name="preco" className={styles.input} value={newPlano.preco} disabled={newPlano.gratis} onChange={(e) => setNewPlano(p => ({...p, preco: parseFloat(e.target.value)}))} />
                                             </div>
                                                     <div className={styles.sliderGroup}>
                                                         <div className={styles.switchContainer}>

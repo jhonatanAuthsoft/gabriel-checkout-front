@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { IMaskInput, IMask } from 'react-imask';
 import styles from './styles.module.css';
 import { FaShoppingBag, FaCog, FaBox, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaFileExport, FaXmark, FaSort, FaArrowUpRightFromSquare, FaChevronLeft, FaChevronRight, FaFilter } from 'react-icons/fa6';
@@ -12,7 +13,6 @@ interface Venda {
     dataCriacao: string;
     dataAtualizacao: string;
     cliente: { nome: string };
-    comissaoVenda: number;
     valor: number;
     tipoPagamento: string;
     statusVenda: string;
@@ -26,21 +26,77 @@ interface Venda {
 
 const DateInput = ({ id, name, label, value, onChange }: { id: string, name: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
     const [isFocused, setIsFocused] = useState(false);
-    const hasValue = !!value;
+    const [displayValue, setDisplayValue] = useState('');
+
+    useEffect(() => {
+        setDisplayValue(value ? value.split('-').reverse().join('/') : '');
+    }, [value]);
+
+    const handleAccept = (value: any, mask: any) => {
+        setDisplayValue(mask.masked.value);
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        setIsFocused(false);
+        const parts = displayValue.split('/');
+        let newValue = '';
+
+        if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            const year = parseInt(parts[2], 10);
+
+            const daysInMonth = new Date(year, month, 0).getDate();
+            if (day > 0 && day <= daysInMonth && month > 0 && month <= 12 && year > 1900) {
+                newValue = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+
+        const event = {
+            target: {
+                name,
+                value: newValue
+            }
+        } as React.ChangeEvent<HTMLInputElement>;
+
+        onChange(event);
+    };
+
+    const hasValue = !!displayValue;
 
     return (
         <div className={styles.dateInputWrapper}>
-            <input
-                type="date"
-                className={`${styles.filterInput} ${styles.dateInput} ${hasValue ? styles.hasValue : ''}`}
+            <IMaskInput
+                mask="d/m/Y"
+                blocks={{
+                    d: {
+                        mask: IMask.MaskedRange,
+                        from: 1,
+                        to: 31,
+                        maxLength: 2,
+                    },
+                    m: {
+                        mask: IMask.MaskedRange,
+                        from: 1,
+                        to: 12,
+                        maxLength: 2,
+                    },
+                    Y: {
+                        mask: IMask.MaskedRange,
+                        from: 100,
+                        to: new Date().getFullYear() + 100,
+                    }
+                }}
+                placeholder=" "
+                className={`${styles.filterInput} ${styles.dateInput}`}
                 id={id}
                 name={name}
-                value={value}
-                onChange={onChange}
+                value={displayValue}
+                onAccept={handleAccept}
                 onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
+                onBlur={handleBlur}
             />
-            <label htmlFor={id} className={`${styles.dateLabel} ${isFocused ? styles.dateFocused : ''} ${hasValue ? styles.dateHasValue : ''}`}>
+            <label htmlFor={id} className={`${styles.dateLabel} ${isFocused || hasValue ? styles.dateFocused : ''}`}>
                 {label}
             </label>
         </div>
@@ -81,8 +137,89 @@ const Relatorios = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
     const [rowExportMenu, setRowExportMenu] = useState<number | null>(null);
+    const [statusOptions, setStatusOptions] = useState<string[]>([]);
+    const [tipoVendaOptions, setTipoVendaOptions] = useState<string[]>([]);
+    const [metodoPagamentoOptions, setMetodoPagamentoOptions] = useState<string[]>([]);
+    const [origemVendaOptions, setOrigemVendaOptions] = useState<string[]>([]);
+    const [produtoNomeOptions, setProdutoNomeOptions] = useState<string[]>([]);
+    const [moedaOptions, setMoedaOptions] = useState<string[]>([]);
     const rowExportMenuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
+
+    const formatDate = (dateString: string | null): string => {
+        if (!dateString) {
+            return 'N/A';
+        }
+        const date = new Date(dateString);
+        return new Intl.DateTimeFormat('pt-BR', { timeZone: 'UTC' }).format(date);
+    };
+
+    const getStatusClass = (status: string) => {
+        switch (status) {
+            case 'FINALIZADO':
+                return styles.statusFinalizado;
+            case 'PENDENTE':
+                return styles.statusPendente;
+            case 'CANCELADO':
+                return styles.statusCancelado;
+            case 'CARRINHO_ABANDONADO':
+                return styles.statusCarrinhoAbandonado;
+            default:
+                return '';
+        }
+    };
+
+    const getTipoVendaText = (tipo: string) => {
+        switch (tipo) {
+            case 'RECORRENTE':
+                return 'Renovação';
+            case 'UNICA':
+                return 'Pagamento Único';
+            default:
+                return tipo;
+        }
+    };
+
+    const getMetodoPagamentoText = (metodo: string) => {
+        switch (metodo) {
+            case 'CARTAO_CREDITO':
+                return 'Cartão de Crédito';
+            case 'CARTAO_DEBITO':
+                return 'Cartão de Débito';
+            case 'PIX':
+                return 'PIX';
+            case 'BOLETO':
+                return 'Boleto';
+            default:
+                return metodo;
+        }
+    };
+
+    const getOrigemVendaText = (origem: string) => {
+        switch (origem) {
+            case 'SITE':
+                return 'Site';
+            case 'APP':
+                return 'Aplicativo';
+            default:
+                return origem;
+        }
+    };
+
+    const getStatusText = (status: string) => {
+        switch (status) {
+            case 'FINALIZADO':
+                return 'Finalizado';
+            case 'PENDENTE':
+                return 'Pendente';
+            case 'CANCELADO':
+                return 'Cancelado';
+            case 'CARRINHO_ABANDONADO':
+                return 'Carrinho Abandonado';
+            default:
+                return status;
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
@@ -140,14 +277,13 @@ const Relatorios = () => {
                 dataAtualizacao: venda.dataAtualizacao,
                 dataPagamento: venda.dataPagamento,
                 cliente: { nome: venda.cliente?.nome || 'N/A' },
-                comissaoVenda: 0,
                 valor: venda.valorPago,
                 tipoPagamento: venda.metodoPagamento,
                 statusVenda: venda.statusVenda,
                 tipoVenda: venda.tipoVenda,
                 origemVenda: venda.origemVenda,
-                cpfCnpj: venda.cliente?.documento,
-                cupom: venda.cupom,
+                cpfCnpj: venda.cliente?.cpf || venda.cliente?.cnpj || '',
+                cupom: (typeof venda.cupomUsado === 'string' ? venda.cupomUsado : venda.cupomUsado?.codigoCupom) || '',
                 moeda: venda.moeda,
             }));
             setAllVendas(vendasMapeadas);
@@ -164,6 +300,22 @@ const Relatorios = () => {
     }, [fetchVendas]);
 
     useEffect(() => {
+        if (allVendas.length > 0) {
+            const getUniqueValues = (accessor: (v: Venda) => string | undefined) => {
+                const values = allVendas.map(accessor).filter((value): value is string => !!value && value !== 'N/A');
+                return [...new Set(values)].sort();
+            };
+
+            setStatusOptions(getUniqueValues(v => v.statusVenda));
+            setTipoVendaOptions(getUniqueValues(v => v.tipoVenda));
+            setMetodoPagamentoOptions(getUniqueValues(v => v.tipoPagamento));
+            setOrigemVendaOptions(getUniqueValues(v => v.origemVenda));
+            setProdutoNomeOptions(getUniqueValues(v => v.produto.nome));
+            setMoedaOptions(getUniqueValues(v => v.moeda));
+        }
+    }, [allVendas]);
+
+    useEffect(() => {
         const processVendas = () => {
             const filtered = allVendas.filter(venda => {
                 const {
@@ -172,7 +324,7 @@ const Relatorios = () => {
                     cupom, moeda, dataPagamentoInicio, dataPagamentoFim
                 } = filters;
 
-                if (codigoSolicitacao && !venda.codigo?.toLowerCase().includes(codigoSolicitacao.toLowerCase())) return false;
+                if (codigoSolicitacao && !venda.id.toString().includes(codigoSolicitacao)) return false;
                 if (clienteNome && !venda.cliente.nome?.toLowerCase().includes(clienteNome.toLowerCase())) return false;
                 if (statusVenda && venda.statusVenda !== statusVenda) return false;
                 if (tipoVenda && venda.tipoVenda !== tipoVenda) return false;
@@ -527,19 +679,34 @@ const Relatorios = () => {
                         <div className={styles.filterItem}><input type="text" placeholder="Comprador" name="clienteNome" value={filters.clienteNome} onChange={handleFilterChange} className={styles.filterInput} /></div>
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
-                                <select className={styles.filterSelect} name="statusVenda" value={filters.statusVenda} onChange={handleFilterChange}><option value="">Status</option><option value="FINALIZADO">Concluído</option><option value="PENDENTE">Pendente</option><option value="CANCELADO">Cancelado</option></select>
+                                <select className={styles.filterSelect} name="statusVenda" value={filters.statusVenda} onChange={handleFilterChange}>
+                                    <option value="">Status</option>
+                                    {statusOptions.map(option => (
+                                        <option key={option} value={option}>{getStatusText(option)}</option>
+                                    ))}
+                                </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
                         </div>
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
-                                <select className={styles.filterSelect} name="tipoVenda" value={filters.tipoVenda} onChange={handleFilterChange}><option value="">Tipo de Venda</option><option value="RECORRENTE">Renovação</option><option value="UNICA">Pagamento Único</option></select>
+                                <select className={styles.filterSelect} name="tipoVenda" value={filters.tipoVenda} onChange={handleFilterChange}>
+                                    <option value="">Tipo de Venda</option>
+                                    {tipoVendaOptions.map(option => (
+                                        <option key={option} value={option}>{getTipoVendaText(option)}</option>
+                                    ))}
+                                </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
                         </div>
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
-                                <select className={styles.filterSelect} name="metodoPagamento" value={filters.metodoPagamento} onChange={handleFilterChange}><option value="">Forma de Pagamento</option><option value="CARTAO_CREDITO">Cartão de Crédito</option><option value="CARTAO_DEBITO">Cartão de Débito</option><option value="PIX">PIX</option><option value="BOLETO">Boleto</option></select>
+                                <select className={styles.filterSelect} name="metodoPagamento" value={filters.metodoPagamento} onChange={handleFilterChange}>
+                                    <option value="">Forma de Pagamento</option>
+                                    {metodoPagamentoOptions.map(option => (
+                                        <option key={option} value={option}>{getMetodoPagamentoText(option)}</option>
+                                    ))}
+                                </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
                         </div>
@@ -549,21 +716,36 @@ const Relatorios = () => {
                     <div className={styles.filterRow}>
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
-                                <select className={styles.filterSelect} name="origemVenda" value={filters.origemVenda} onChange={handleFilterChange}><option value="">Origem da Venda</option><option value="SITE">Site</option><option value="APP">Aplicativo</option></select>
+                                <select className={styles.filterSelect} name="origemVenda" value={filters.origemVenda} onChange={handleFilterChange}>
+                                    <option value="">Origem da Venda</option>
+                                    {origemVendaOptions.map(option => (
+                                        <option key={option} value={option}>{getOrigemVendaText(option)}</option>
+                                    ))}
+                                </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
                         </div>
                         <div className={styles.filterItem}><input type="text" placeholder="CPF/CNPJ" name="cpfCnpj" value={filters.cpfCnpj} onChange={handleFilterChange} className={styles.filterInput} /></div>
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
-                                <select className={styles.filterSelect} name="produtoNome" value={filters.produtoNome} onChange={handleFilterChange}><option value="">Produto</option><option value="mensal">Designerflix Mensal</option><option value="anual">Designerflix Anual</option></select>
+                                <select className={styles.filterSelect} name="produtoNome" value={filters.produtoNome} onChange={handleFilterChange}>
+                                    <option value="">Produto</option>
+                                    {produtoNomeOptions.map(option => (
+                                        <option key={option} value={option}>{option}</option>
+                                    ))}
+                                </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
                         </div>
                         <div className={styles.filterItem}><input type="text" placeholder="Cupom" name="cupom" value={filters.cupom} onChange={handleFilterChange} className={styles.filterInput} /></div>
                         <div className={styles.filterItem}>
                             <div className={styles.selectWrapper}>
-                                <select className={styles.filterSelect} name="moeda" value={filters.moeda} onChange={handleFilterChange}><option value="">Moeda</option><option value="brl">BRL</option><option value="usd">USD</option><option value="eur">EUR</option></select>
+                                <select className={styles.filterSelect} name="moeda" value={filters.moeda} onChange={handleFilterChange}>
+                                    <option value="">Moeda</option>
+                                    {moedaOptions.map(option => (
+                                        <option key={option} value={option}>{option.toUpperCase()}</option>
+                                    ))}
+                                </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
                         </div>
@@ -621,7 +803,6 @@ const Relatorios = () => {
                                     <th className={styles.sortable}>Data Pedido <FaSort /></th>
                                     <th className={styles.sortable}>Data Finalização <FaSort /></th>
                                     <th className={styles.sortable}>Cliente <FaSort /></th>
-                                    <th className={styles.sortable}>Comissão <FaSort /></th>
                                     <th className={styles.sortable}>Valor Venda <FaSort /></th>
                                     <th className={styles.sortable}>Forma Pgto <FaSort /></th>
                                     <th className={styles.sortable}>Status <FaSort /></th>
@@ -643,15 +824,14 @@ const Relatorios = () => {
                                                 onChange={() => handleSelectSale(sale.id)}
                                             />
                                         </td>
-                                        <td>{sale.codigo}</td>
+                                        <td>{sale.id}</td>
                                         <td>{sale.produto?.nome || 'N/A'}</td>
-                                        <td>{new Date(sale.dataCriacao).toLocaleDateString()}</td>
-                                        <td>{sale.dataPagamento ? new Date(sale.dataPagamento).toLocaleDateString() : 'N/A'}</td>
+                                        <td>{formatDate(sale.dataCriacao)}</td>
+                                        <td>{formatDate(sale.dataPagamento)}</td>
                                         <td>{sale.cliente?.nome || 'N/A'}</td>
-                                        <td>R$ {sale.comissaoVenda.toFixed(2)}</td>
                                         <td>R$ {sale.valor.toFixed(2)}</td>
                                         <td>{sale.tipoPagamento}</td>
-                                        <td><span className={styles.statusConcluido}>{sale.statusVenda}</span></td>
+                                        <td><span className={getStatusClass(sale.statusVenda)}>{getStatusText(sale.statusVenda)}</span></td>
                                         <td className={styles.actionCellContainer}>
                                             <button className={styles.btnAction} onClick={() => setRowExportMenu(rowExportMenu === sale.id ? null : sale.id)}>
                                                 <FaFileExport />
@@ -683,4 +863,4 @@ const Relatorios = () => {
     );
 };
 
-export default Relatorios; 
+export default Relatorios;

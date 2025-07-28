@@ -441,9 +441,36 @@ input[type="date"].hasValue::-webkit-datetime-edit {
     color: #ccc;
 }
 
-.statusConcluido {
-    color: #28a745;
-    font-weight: 500;
+.statusFinalizado {
+    background-color: #d4edda;
+    color: #155724;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.statusPendente {
+    background-color: #fff3cd;
+    color: #856404;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.statusCancelado {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+}
+
+.statusCarrinhoAbandonado {
+    background-color: #e2e3e5;
+    color: #383d41;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-weight: bold;
 }
 
 .btnAction {

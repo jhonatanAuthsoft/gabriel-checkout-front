@@ -41,7 +41,7 @@
     position: relative;
 }
 
-#logo {
+.logo {
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -214,6 +214,24 @@
     border-bottom: 1px solid #EEEEEE;padding: 10px 0px;
 }
 
+.errorMessage {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 15px 20px;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
+}
+
 .selectorBtn {
     border: none;
     background: none;
@@ -384,6 +402,45 @@
     border: none;
     color: #ff0000;
     cursor: pointer;
+    display: flex;
+}
+
+.faqItemContainer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 15px;
+    margin-bottom: 15px;
+}
+
+.faqInputs {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.faqActions {
+    margin-left: 20px;
+}
+
+.deleteButton {
+    background-color: #ff4d4d;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.deleteButton:hover {
+    background-color: #e60000;
 }
 
 .dataSection {

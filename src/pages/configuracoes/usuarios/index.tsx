@@ -10,6 +10,7 @@ interface Usuario {
     nome: string;
     email: string;
     ativo: boolean;
+    status: string;
     permissao: string;
     cpf: string;
     celular: string;
@@ -56,6 +57,54 @@ const Usuarios: React.FC = () => {
     const [newUser, setNewUser] = useState(initialUserState);
     const [editingUser, setEditingUser] = useState<Usuario | null>(null);
     const navigate = useNavigate();
+
+    const handleStatusChange = async (userId: number, newStatus: boolean) => {
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return;
+
+        const newStatusString = newStatus ? 'ATIVO' : 'INATIVO';
+
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token || !apiUrl) {
+            alert('Erro de configuração. Tente novamente mais tarde.');
+            return;
+        }
+
+        const payload = {
+            nome: user.nome,
+            email: user.email,
+            cpf: user.cpf,
+            celular: user.celular,
+            permissao: user.permissao,
+            endereco: user.endereco,
+            status: newStatusString,
+        };
+
+        try {
+            const response = await fetch(`${apiUrl}usuario/atualizar/${userId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                throw new Error('Falha ao atualizar o status do usuário.');
+            }
+
+            setAllUsers(prevUsers =>
+                prevUsers.map(u =>
+                    u.id === userId ? { ...u, status: newStatusString, ativo: newStatus } : u
+                )
+            );
+        } catch (error) {
+            console.error("Erro ao atualizar status do usuário:", error);
+            alert('Não foi possível atualizar o status do usuário.');
+        }
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
@@ -187,14 +236,14 @@ const Usuarios: React.FC = () => {
         }
 
         const userToSave = editingUser || newUser;
-        const { nome, email, permissao, cpf, celular, endereco } = userToSave as any;
+        const { nome, email, permissao, cpf, celular, endereco, status } = userToSave as any;
 
         if (!nome || !email) {
             alert('Nome e e-mail são obrigatórios.');
             return;
         }
 
-        const payload: any = { nome, email, permissao };
+        const payload: any = { nome, email, permissao, status: editingUser ? status : 'ATIVO' };
 
         if (cpf) payload.cpf = cpf;
         if (celular) payload.celular = celular;
@@ -276,13 +325,7 @@ const Usuarios: React.FC = () => {
         setEditingUser(null);
     };
 
-    const handleToggleActive = (id: number) => {
-        setUsuarios(prevUsers =>
-            prevUsers.map(user =>
-                user.id === id ? { ...user, ativo: !user.ativo } : user
-            )
-        );
-    };
+
 
     const renderPaginationButtons = () => {
         const pageNumbers = [];
@@ -412,8 +455,8 @@ const Usuarios: React.FC = () => {
                                                             type="checkbox"
                                                             className={styles.slideCheckbox}
                                                             id={`cupomAtivo${user.id}`}
-                                                            checked={user.ativo}
-                                                            onChange={() => handleToggleActive(user.id)}
+                                                            checked={user.status === 'ATIVO'}
+                                                            onChange={() => handleStatusChange(user.id, user.status !== 'ATIVO')}
                                                         />
                                                         <label className={styles.slideSwitch} htmlFor={`cupomAtivo${user.id}`}>
                                                             <span className={styles.sliderSwitch} />
@@ -588,4 +631,4 @@ const Usuarios: React.FC = () => {
     );
 };
 
-export default Usuarios; 
+export default Usuarios;
