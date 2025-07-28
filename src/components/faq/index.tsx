@@ -31,10 +31,6 @@ const Faq: React.FC<FaqProps> = ({
         setOpenIndex(openIndex === index ? null : index);
     };
 
-    if (true) {
-        console.log(mostrarWhatsappSuporte)
-    }
-
     return (
         <div className={styles.downSection}>
             <div className={styles.guaranteeSection}>

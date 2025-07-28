@@ -215,7 +215,8 @@ const Checkout: React.FC = () => {
                     });
                     if (response.ok) {
                         const data = await response.json();
-                        if (data.dados.statusPagamento === 'APROVADO') {
+                        console.log('API Response:', data);
+                        if (data?.statusPagamento === 'APROVADO') {
                             clearInterval(interval);
                             if (urlObrigado) {
                                 window.open(formatUrl(urlObrigado), '_blank');
@@ -226,7 +227,7 @@ const Checkout: React.FC = () => {
                 } catch (error) {
                     console.error('Erro ao verificar status da venda:', error);
                 }
-            }, 30000);
+            }, 5000);
 
             return () => clearInterval(interval);
         }
