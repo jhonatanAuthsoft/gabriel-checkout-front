@@ -2,26 +2,32 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { IMaskInput, IMask } from 'react-imask';
 import styles from './styles.module.css';
 import { FaShoppingBag, FaCog, FaBox, FaFilePdf, FaFileExcel } from 'react-icons/fa';
-import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaFileExport, FaXmark, FaSort, FaArrowUpRightFromSquare, FaChevronLeft, FaChevronRight, FaFilter } from 'react-icons/fa6';
+import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaFileExport, FaXmark, FaSort, FaArrowUpRightFromSquare, FaChevronLeft, FaChevronRight, FaFilter, FaEllipsis } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 import { useNavigate } from 'react-router-dom';
 
 interface Venda {
     id: number;
     codigo: string;
-    produto: { nome: string };
+    produto: { nome: string, id: string };
     dataCriacao: string;
     dataAtualizacao: string;
-    cliente: { nome: string };
+    cliente: { nome: string, id: string };
     valor: number;
     tipoPagamento: string;
     statusVenda: string;
+    statusPagamento: string;
     dataPagamento: string;
     tipoVenda: string;
     origemVenda: string;
+    tipoRecorrencia: string;
+    vendedor: string;
+    origemCompra: string;
     cpfCnpj: string;
     cupom: string;
     moeda: string;
+    idPlano: string;
+    idVendedor: string | null;
 }
 
 const DateInput = ({ id, name, label, value, onChange }: { id: string, name: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
@@ -137,6 +143,7 @@ const Relatorios = () => {
     const [totalPages, setTotalPages] = useState(0);
     const [totalItems, setTotalItems] = useState(0);
     const [rowExportMenu, setRowExportMenu] = useState<number | null>(null);
+    const [rowActionMenu, setRowActionMenu] = useState<number | null>(null);
     const [statusOptions, setStatusOptions] = useState<string[]>([]);
     const [tipoVendaOptions, setTipoVendaOptions] = useState<string[]>([]);
     const [metodoPagamentoOptions, setMetodoPagamentoOptions] = useState<string[]>([]);
@@ -144,6 +151,7 @@ const Relatorios = () => {
     const [produtoNomeOptions, setProdutoNomeOptions] = useState<string[]>([]);
     const [moedaOptions, setMoedaOptions] = useState<string[]>([]);
     const rowExportMenuRef = useRef<HTMLDivElement>(null);
+    const rowActionMenuRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
 
     const formatDate = (dateString: string | null): string => {
@@ -164,6 +172,8 @@ const Relatorios = () => {
                 return styles.statusCancelado;
             case 'CARRINHO_ABANDONADO':
                 return styles.statusCarrinhoAbandonado;
+            case 'REEMBOLSO_SOLICITADO':
+                return styles.statusReembolsoSolicitado;
             default:
                 return '';
         }
@@ -216,6 +226,8 @@ const Relatorios = () => {
                 return 'Cancelado';
             case 'CARRINHO_ABANDONADO':
                 return 'Carrinho Abandonado';
+            case 'REEMBOLSO_SOLICITADO':
+                return 'Reembolso Solicitado';
             default:
                 return status;
         }
@@ -272,19 +284,31 @@ const Relatorios = () => {
             const vendasMapeadas = (data.content || []).map((venda: any) => ({
                 id: venda.id,
                 codigo: venda.codigoSolicitacao,
-                produto: { nome: venda.produto?.dadosProduto?.dadosGerais?.nome || 'N/A' },
+                produto: {
+                    nome: venda.produto?.dadosProduto?.dadosGerais?.nome || 'N/A',
+                    id: venda.produto?.id || '',
+                },
                 dataCriacao: venda.dataCompra,
                 dataAtualizacao: venda.dataAtualizacao,
                 dataPagamento: venda.dataPagamento,
-                cliente: { nome: venda.cliente?.nome || 'N/A' },
+                cliente: {
+                    nome: venda.cliente?.nome || 'N/A',
+                    id: venda.cliente?.id || '',
+                },
                 valor: venda.valorPago,
                 tipoPagamento: venda.metodoPagamento,
                 statusVenda: venda.statusVenda,
+                statusPagamento: venda.statusPagamento,
                 tipoVenda: venda.tipoVenda,
+                tipoRecorrencia: venda.tipoRecorrencia,
+                vendedor: venda.vendedor,
+                origemCompra: venda.origemCompra,
                 origemVenda: venda.origemVenda,
                 cpfCnpj: venda.cliente?.cpf || venda.cliente?.cnpj || '',
                 cupom: (typeof venda.cupomUsado === 'string' ? venda.cupomUsado : venda.cupomUsado?.codigoCupom) || '',
                 moeda: venda.moeda,
+                idPlano: venda.idPlano,
+                idVendedor: venda.idVendedor,
             }));
             setAllVendas(vendasMapeadas);
         } catch (err: any) {
@@ -326,7 +350,7 @@ const Relatorios = () => {
 
                 if (codigoSolicitacao && !venda.id.toString().includes(codigoSolicitacao)) return false;
                 if (clienteNome && !venda.cliente.nome?.toLowerCase().includes(clienteNome.toLowerCase())) return false;
-                if (statusVenda && venda.statusVenda !== statusVenda) return false;
+                                if (statusVenda && venda.statusVenda !== statusVenda && venda.statusPagamento !== statusVenda) return false;
                 if (tipoVenda && venda.tipoVenda !== tipoVenda) return false;
                 if (metodoPagamento && venda.tipoPagamento !== metodoPagamento) return false;
                 if (origemVenda && venda.origemVenda !== origemVenda) return false;
@@ -511,12 +535,18 @@ const Relatorios = () => {
             if (exportMenuRef.current && !exportMenuRef.current.contains(event.target as Node)) {
                 setExportMenuOpen(false);
             }
+            if (rowExportMenuRef.current && !rowExportMenuRef.current.contains(event.target as Node)) {
+                setRowExportMenu(null);
+            }
+            if (rowActionMenuRef.current && !rowActionMenuRef.current.contains(event.target as Node)) {
+                setRowActionMenu(null);
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
-    }, [exportMenuRef]);
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -599,6 +629,61 @@ const Relatorios = () => {
         }
     
         return pageNumbers;
+    };
+
+    const handleMarkAsRefunded = async (sale: Venda) => {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            alert('Você precisa estar logado para realizar esta ação.');
+            return;
+        }
+
+        const now = new Date();
+        const dataReembolso = now.getFullYear() + '-' + 
+            String(now.getMonth() + 1).padStart(2, '0') + '-' + 
+            String(now.getDate()).padStart(2, '0') + 'T' + 
+            String(now.getHours()).padStart(2, '0') + ':' + 
+            String(now.getMinutes()).padStart(2, '0') + ':' + 
+            String(now.getSeconds()).padStart(2, '0') + ':' + 
+            String(now.getMilliseconds()).padStart(3, '0');
+
+        const payload = {
+            "idProduto": sale.produto.id,
+            "valorPago": sale.valor,
+            "idPlano": sale.idPlano,
+            "origemCompra": sale.origemCompra,
+            "metodoPagamento": sale.tipoPagamento,
+            "statusPagamento": "REEMBOLSADO",
+            "statusVenda": "CANCELADO",
+            "tipoRecorrencia": sale.tipoRecorrencia,
+            "idCliente": sale.cliente.id,
+            "idVendedor": sale.vendedor,
+            "dataReembolso": dataReembolso
+        };
+
+        try {
+            const apiUrl = import.meta.env.VITE_API_URL;
+            const response = await fetch(`${apiUrl}venda/editar/${sale.id}`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(payload),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Falha ao atualizar a venda.' }));
+                throw new Error(errorData.message || 'Falha ao atualizar a venda.');
+            }
+
+            alert('Venda marcada como reembolsada com sucesso!');
+            fetchVendas(); // Refresh the list
+            setRowActionMenu(null);
+        } catch (error: any) {
+            console.error('Erro ao marcar como reembolsado:', error);
+            alert(`Erro: ${error.message}`);
+        }
     };
 
     const orderByOptions: { [key: string]: string } = {
@@ -684,6 +769,7 @@ const Relatorios = () => {
                                     {statusOptions.map(option => (
                                         <option key={option} value={option}>{getStatusText(option)}</option>
                                     ))}
+                                    <option value="REEMBOLSO_SOLICITADO">Reembolso Solicitado</option>
                                 </select>
                                 <FaChevronDown className={styles.selectIcon} />
                             </div>
@@ -816,34 +902,57 @@ const Relatorios = () => {
                                     <tr><td colSpan={11} style={{ textAlign: 'center', color: 'red' }}>{fetchError}</td></tr>
                                 ) : (
                                     vendas.map((sale) => (
-                                    <tr key={sale.id}>
-                                        <td>
-                                            <input
-                                                type="checkbox"
-                                                checked={selectedSales.includes(sale.id)}
-                                                onChange={() => handleSelectSale(sale.id)}
-                                            />
-                                        </td>
-                                        <td>{sale.id}</td>
-                                        <td>{sale.produto?.nome || 'N/A'}</td>
-                                        <td>{formatDate(sale.dataCriacao)}</td>
-                                        <td>{formatDate(sale.dataPagamento)}</td>
-                                        <td>{sale.cliente?.nome || 'N/A'}</td>
-                                        <td>R$ {sale.valor.toFixed(2)}</td>
-                                        <td>{sale.tipoPagamento}</td>
-                                        <td><span className={getStatusClass(sale.statusVenda)}>{getStatusText(sale.statusVenda)}</span></td>
-                                        <td className={styles.actionCellContainer}>
-                                            <button className={styles.btnAction} onClick={() => setRowExportMenu(rowExportMenu === sale.id ? null : sale.id)}>
-                                                <FaFileExport />
-                                            </button>
-                                            {rowExportMenu === sale.id && (
-                                                <div className={styles.rowExportMenu} ref={rowExportMenuRef}>
-                                                    <button onClick={() => handleExportSingleSale('pdf', sale.id)}><FaFilePdf /> PDF</button>
-                                                    <button onClick={() => handleExportSingleSale('excel', sale.id)}><FaFileExcel /> Excel</button>
+                                        <tr key={sale.id} className={sale.statusPagamento === 'REEMBOLSO_SOLICITADO' ? styles.reembolsoSolicitado : ''}>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedSales.includes(sale.id)}
+                                                    onChange={() => handleSelectSale(sale.id)}
+                                                />
+                                            </td>
+                                            <td>{sale.id}</td>
+                                            <td>{sale.produto?.nome || 'N/A'}</td>
+                                            <td>{formatDate(sale.dataCriacao)}</td>
+                                            <td>{formatDate(sale.dataPagamento)}</td>
+                                            <td>{sale.cliente?.nome || 'N/A'}</td>
+                                            <td>R$ {sale.valor.toFixed(2)}</td>
+                                            <td>{sale.tipoPagamento}</td>
+                                            <td>
+                                                <span className={getStatusClass(sale.statusPagamento === 'REEMBOLSO_SOLICITADO' ? sale.statusPagamento : sale.statusVenda)}>
+                                                    {getStatusText(sale.statusPagamento === 'REEMBOLSO_SOLICITADO' ? sale.statusPagamento : sale.statusVenda)}
+                                                </span>
+                                            </td>
+                                            <td className={styles.actionCellContainer}>
+                                                <div className={styles.actionCell}>
+                                                    {sale.statusPagamento === 'REEMBOLSO_SOLICITADO' && (
+                                                            <>
+                                                                <button className={styles.btnAction} onClick={() => setRowActionMenu(rowActionMenu === sale.id ? null : sale.id)}>
+                                                                    <FaEllipsis />
+                                                                </button>
+                                                                {rowActionMenu === sale.id && (
+                                                                    <div className={styles.rowActionMenu} ref={rowActionMenuRef}>
+                                                                        <button 
+                                                                            className={styles.markAsRefundedBtn}
+                                                                            onClick={() => handleMarkAsRefunded(sale)}
+                                                                        >
+                                                                            Marcar como reembolsado
+                                                                        </button>
+                                                                    </div>
+                                                                )}
+                                                            </>
+                                                        )}
+                                                        <button className={styles.btnAction} onClick={() => setRowExportMenu(rowExportMenu === sale.id ? null : sale.id)}>
+                                                            <FaFileExport />
+                                                        </button>
+                                                        {rowExportMenu === sale.id && (
+                                                            <div className={styles.rowExportMenu} ref={rowExportMenuRef}>
+                                                                <button onClick={() => handleExportSingleSale('pdf', sale.id)}><FaFilePdf /> PDF</button>
+                                                                <button onClick={() => handleExportSingleSale('excel', sale.id)}><FaFileExcel /> Excel</button>
+                                                            </div>
+                                                        )}
                                                 </div>
-                                            )}
-                                        </td>
-                                    </tr>
+                                            </td>
+                                        </tr>
                                     ))
                                 )}
                             </tbody>

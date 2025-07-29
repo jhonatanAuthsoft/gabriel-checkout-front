@@ -21,13 +21,17 @@
 }
 
 .guaranteeBadge {
-    width: 130px;
-    height: 130px;
-    background-image: url('../../assets/img/seloGarantia.png');
-    background-size: contain;
-    background-repeat: no-repeat;
-    background-position: center;
-    flex-shrink: 0;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    margin-right: 20px;
+}
+
+.guaranteeBadge img {
+    width: 100px;
+    height: 100px;
+    object-fit: contain;
 }
 
 .guaranteeInfo {

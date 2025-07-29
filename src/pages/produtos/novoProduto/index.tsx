@@ -67,6 +67,9 @@ const NovoProduto: React.FC = () => {
     const [imagens, setImagens] = useState<File[]>([]);
     const [mapeamentoImagens, setMapeamentoImagens] = useState<{ nomeArquivo: string, tipo: string }[]>([]);
     const [imagensParaDeletar, setImagensParaDeletar] = useState<number[]>([]);
+    const [selos, setSelos] = useState<File[]>([]);
+    const [mapeamentoSelos, setMapeamentoSelos] = useState<{ nomeArquivo: string, tipo: string }[]>([]);
+    const [selosParaDeletar, setSelosParaDeletar] = useState<number[]>([]);
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [activeSubMenus, setActiveSubMenus] = useState<string[]>(['Produtos']);
     const [activeSection, setActiveSection] = useState('dados');
@@ -116,6 +119,7 @@ const NovoProduto: React.FC = () => {
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+    const seloFileInputRef = useRef<HTMLInputElement>(null);
     
 
     const handleLogout = () => {
@@ -216,6 +220,16 @@ const NovoProduto: React.FC = () => {
         setSeloSelecionado(selo);
     };
 
+    const handlePlanoStatusChange = (planoIndex: number, newStatus: string) => {
+        const updatedPlanos = produtoData.planos.map((plano, index) => {
+            if (index === planoIndex) {
+                return { ...plano, status: newStatus };
+            }
+            return plano;
+        });
+        setProdutoData({ ...produtoData, planos: updatedPlanos });
+    };
+
     const handleFileButtonClick = (ref: React.RefObject<HTMLInputElement | null>) => {
         ref.current?.click();
     };
@@ -242,6 +256,9 @@ const NovoProduto: React.FC = () => {
                 const otherMapeamentos = mapeamentoImagens.filter(m => m.tipo !== 'BANNER');
                 setImagens([...otherImages, ...files]);
                 setMapeamentoImagens([...otherMapeamentos, ...newMapeamento]);
+            } else if (inputName === 'selo') {
+                setSelos(prev => [...prev, ...files]);
+                setMapeamentoSelos(prev => [...prev, ...newMapeamento]);
             } else {
                 setImagens(prev => [...prev, ...files]);
                 setMapeamentoImagens(prev => [...prev, ...newMapeamento]);
@@ -250,16 +267,34 @@ const NovoProduto: React.FC = () => {
     };
 
     const handleRemoveFile = (fileNameToRemove: string, type: 'PRODUTO' | 'BANNER' | 'SELO') => {
-        const indexToRemove = mapeamentoImagens.findIndex(
-            m => m.nomeArquivo === fileNameToRemove && m.tipo === type
+        if (type === 'SELO') {
+            handleRemoveSelo(fileNameToRemove);
+        } else {
+            const indexToRemove = mapeamentoImagens.findIndex(
+                m => m.nomeArquivo === fileNameToRemove && m.tipo === type
+            );
+        
+            if (indexToRemove > -1) {
+                const newImagens = imagens.filter((_, index) => index !== indexToRemove);
+                const newMapeamento = mapeamentoImagens.filter((_, index) => index !== indexToRemove);
+        
+                setImagens(newImagens);
+                setMapeamentoImagens(newMapeamento);
+            }
+        }
+    };
+
+    const handleRemoveSelo = (fileNameToRemove: string) => {
+        const indexToRemove = mapeamentoSelos.findIndex(
+            m => m.nomeArquivo === fileNameToRemove && m.tipo === 'SELO'
         );
-    
+
         if (indexToRemove > -1) {
-            const newImagens = imagens.filter((_, index) => index !== indexToRemove);
-            const newMapeamento = mapeamentoImagens.filter((_, index) => index !== indexToRemove);
-    
-            setImagens(newImagens);
-            setMapeamentoImagens(newMapeamento);
+            const newSelos = selos.filter((_, index) => index !== indexToRemove);
+            const newMapeamento = mapeamentoSelos.filter((_, index) => index !== indexToRemove);
+
+            setSelos(newSelos);
+            setMapeamentoSelos(newMapeamento);
         }
     };
 
@@ -332,13 +367,17 @@ const NovoProduto: React.FC = () => {
         
         const dadosPayload = {
             dados: produtoData,
-            mapeamentoImagens: mapeamentoImagens,
-            imagensParaDeletar: imagensParaDeletar
+            mapeamentoImagens: [...mapeamentoImagens, ...mapeamentoSelos],
+            imagensParaDeletar: [...imagensParaDeletar, ...selosParaDeletar]
         };
 
         formData.append('dados', JSON.stringify(dadosPayload));
 
         imagens.forEach(file => {
+            formData.append('imagens', file);
+        });
+
+        selos.forEach(file => {
             formData.append('imagens', file);
         });
 
@@ -1098,25 +1137,19 @@ const NovoProduto: React.FC = () => {
                                             </div>
                                         </div>
                                         <div className={styles.dataCol}>
-                                            <div className={styles.stampGroup}>
-                                                <label className={styles.label} htmlFor="email">
-                                                    Selo de Garantia
-                                                </label>
- e na                                                 <div className={styles.stampGroupBody}>
-                                                    {['Selo 1', 'Selo 2', 'Selo 3', 'Selo 4', 'Selo 5', 'Selo 6', 'Selo 7'].map(selo => (
-                                                        <div
-                                                            key={selo}
-                                                            className={`${styles.stamp} ${seloSelecionado === selo ? styles.active : ''}`}
-                                                            onClick={() => handleSeloClick(selo)}
-                                                        >
-                                                            <div className={styles.stampHead}>{selo}</div>
-                                                            <div className={styles.stampBody}>
-                                                                <img
-                                                                    className={styles.stampImg}
-                                                                    src={seloGarantiaImg}
-                                                                    alt="Selo de Garantia"
-                                                                />
-                                                            </div>
+                                            <div className={styles.imageUploadContainer}>
+                                                <p>Selo de Garantia</p>
+                                                <input type="file" id="selo-upload" ref={seloFileInputRef} style={{ display: 'none' }} onChange={(e) => handleFileChange(e, 'selo')} accept="image/*" multiple />
+                                                <button type="button" className={styles.uploadButton} onClick={() => handleFileButtonClick(seloFileInputRef)}>
+                                                    <FaArrowUpFromBracket /> Adicionar Selo
+                                                </button>
+                                                <div className={styles.previewContainer}>
+                                                    {mapeamentoSelos.map((selo, index) => (
+                                                        <div key={`selo-${index}-${selo.nomeArquivo}`} className={styles.previewItem}>
+                                                            <img src={URL.createObjectURL(selos[index])} alt={selo.nomeArquivo} />
+                                                            <button onClick={() => handleRemoveSelo(selo.nomeArquivo)} title="Remover selo">
+                                                                <FaTrashAltIcon />
+                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1611,7 +1644,9 @@ const NovoProduto: React.FC = () => {
                                                                         <input
                                                                             type="checkbox"
                                                                             className={styles.slideCheckbox}
-                                                                            id="planoAtivo1"
+                                                                            id={`planoAtivo${index}`}
+                                                                            checked={plano.status === 'ATIVO'}
+                                                                            onChange={() => handlePlanoStatusChange(index, plano.status === 'ATIVO' ? 'INATIVO' : 'ATIVO')}
                                                                         />
                                                                         <label
                                                                             className={styles.slideSwitch}

@@ -41,6 +41,14 @@ interface Pergunta {
     resposta: string;
 }
 
+interface Imagem {
+    id: number;
+    nomeImagem: string;
+    caminhoImagem: string;
+    tipoImagem: 'PRODUTO' | 'BANNER' | 'SELO';
+    signedUrl: string;
+}
+
 interface Product {
     id: string;
     dadosProduto: {
@@ -61,6 +69,7 @@ interface Product {
     };
     planos: Plan[];
     cupom?: Cupom[];
+    imagens: Imagem[];
 }
 
 const Checkout: React.FC = () => {
@@ -90,6 +99,7 @@ const Checkout: React.FC = () => {
     const [parcelas, setParcelas] = useState(1);
 
     const [product, setProduct] = useState<Product | null>(null);
+    const [imagens, setImagens] = useState<Imagem[]>([]);
     const [selectedPlanoId, setSelectedPlanoId] = useState<number | null>(null);
 
     const [totalPrice, setTotalPrice] = useState(0);
@@ -157,6 +167,7 @@ const Checkout: React.FC = () => {
                 }
 
                 setProduct(productData);
+                setImagens(productData.imagens || []);
                 setUrlObrigado(productData.dadosProduto.urlPersonalizada || null);
                 
                 if (productData.planos && productData.planos.length > 0) {
@@ -165,7 +176,7 @@ const Checkout: React.FC = () => {
 
                     if (selectedPlan) {
                         if (!selectedPlan.status) {
-                            navigate('/login');
+                            navigate('/');
                             return;
                         }
                         setSelectedPlanoId(selectedPlan.id);
@@ -568,7 +579,8 @@ const Checkout: React.FC = () => {
                     )}
                 </div>
                 
-                <OrderSummary
+                                    <OrderSummary
+                        imagens={imagens}
                         productName={product?.dadosProduto?.dadosGerais?.nome || ''}
                         planName={product?.planos?.find(p => p.id === selectedPlanoId)?.nome || ''}
                         price={totalPrice}

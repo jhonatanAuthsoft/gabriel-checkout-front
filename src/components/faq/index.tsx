@@ -2,6 +2,13 @@ import React, { useState } from 'react';
 import { FaChevronDown, FaWhatsapp, FaPhone } from 'react-icons/fa';
 import styles from './styles.module.css';
 
+interface Imagem {
+    id: number;
+    nomeImagem: string;
+    signedUrl: string;
+    tipoImagem: 'PRODUTO' | 'BANNER' | 'SELO';
+}
+
 interface Pergunta {
     id: number;
     pergunta: string;
@@ -9,6 +16,7 @@ interface Pergunta {
 }
 
 interface FaqProps {
+    imagens: Imagem[];
     mostrarTelefoneSuporte?: boolean;
     mostrarWhatsappSuporte?: boolean;
     telefoneSuporte?: number;
@@ -19,6 +27,7 @@ interface FaqProps {
 
 
 const Faq: React.FC<FaqProps> = ({
+    imagens,
     mostrarTelefoneSuporte,
     mostrarWhatsappSuporte,
     telefoneSuporte,
@@ -31,10 +40,16 @@ const Faq: React.FC<FaqProps> = ({
         setOpenIndex(openIndex === index ? null : index);
     };
 
+    const selos = imagens.filter(img => img.tipoImagem === 'SELO');
+
     return (
         <div className={styles.downSection}>
             <div className={styles.guaranteeSection}>
-                <div className={styles.guaranteeBadge}></div>
+                <div className={styles.guaranteeBadge}>
+                    {selos.map(selo => (
+                        <img key={selo.id} src={selo.signedUrl} alt={selo.nomeImagem} />
+                    ))}
+                </div>
                 <div className={styles.guaranteeInfo}>
                     {perguntas.map((faq, index) => (
                         <div key={faq.id || index} className={styles.faqItem}>

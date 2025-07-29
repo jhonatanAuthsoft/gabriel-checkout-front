@@ -3,6 +3,13 @@ import styles from './styles.module.css';
 import productImg from '../../assets/img/dfCirculo.png';
 import Faq from '../../components/faq';
 
+interface Imagem {
+    id: number;
+    nomeImagem: string;
+    signedUrl: string;
+    tipoImagem: 'PRODUTO' | 'BANNER' | 'SELO';
+}
+
 interface Pergunta {
     id: number;
     pergunta: string;
@@ -10,6 +17,7 @@ interface Pergunta {
 }
 
 interface OrderSummaryProps {
+    imagens: Imagem[];
     productName?: string;
     planName?: string;
     price: number;
@@ -28,6 +36,7 @@ interface OrderSummaryProps {
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({
+    imagens,
     productName,
     planName,
     price,
@@ -109,6 +118,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                 </div>
             </div>
             <Faq 
+                imagens={imagens}
                 mostrarTelefoneSuporte={mostrarTelefoneSuporte}
                 mostrarWhatsappSuporte={mostrarWhatsappSuporte}
                 telefoneSuporte={telefoneSuporte}

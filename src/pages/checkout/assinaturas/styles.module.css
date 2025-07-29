@@ -75,13 +75,13 @@ body.no-scroll {
     position: relative;
 }
 
-#logo {
-    width: 300px;
-    height: 100%;
+.logo {
+    width: 300px !important;
+    height: 100% !important;
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
-    transform: scale(1.5);
+    transform: scale(1.5) !important;
 }
 
 .headerActions a {
@@ -397,6 +397,9 @@ body.no-scroll {
     color: #61FD7D;
     font-size: 35px;
     cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .actionsContainer {
@@ -435,6 +438,41 @@ body.no-scroll {
 
 .actionsMenu a:last-child {
     border-bottom: none;
+}
+
+.refundBtn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #ff6b35;
+    transition: color 0.2s ease;
+}
+
+.refundBtn:hover {
+    color: #e55a2b;
+    background-color: #fff5f2;
+}
+
+.refundBtn svg {
+    font-size: 14px;
+}
+
+.errorMessage {
+    position: fixed;
+    top: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 15px 20px;
+    border: 1px solid #f5c6cb;
+    border-radius: 8px;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    font-size: 16px;
 }
 
 .btnEdit {

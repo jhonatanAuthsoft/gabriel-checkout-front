@@ -1993,3 +1993,289 @@ input[type=number]::-webkit-outer-spin-button {
 input[type=number] {
   -moz-appearance: textfield;
 }
+
+/* Estilos para a seção de selos */
+.stampGroup {
+    margin-top: 20px;
+}
+
+.stampGroupBody {
+    margin-top: 15px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 12px;
+    border: 2px dashed #cbd5e0;
+    transition: all 0.3s ease;
+}
+
+.stampGroupBody:hover {
+    border-color: #0070E1;
+    background: linear-gradient(135deg, #f0f8ff 0%, #e6f3ff 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 112, 225, 0.1);
+}
+
+.uploadButton {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: linear-gradient(135deg, #0070E1 0%, #0056b3 100%);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 112, 225, 0.3);
+    margin-bottom: 20px;
+}
+
+.uploadButton:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 112, 225, 0.4);
+}
+
+.uploadButton:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 10px rgba(0, 112, 225, 0.3);
+}
+
+.imageList {
+    display: flex;
+    flex-direction: row;
+    gap: 16px;
+    margin-top: 15px;
+}
+
+.imagePreview {
+    position: relative;
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.imagePreview:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    border-color: #0070E1;
+}
+
+.imagePreview img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.imagePreview:hover img {
+    transform: scale(1.05);
+}
+
+.removeImageButton {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 28px;
+    height: 28px;
+    background: rgba(220, 53, 69, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.3s ease;
+    opacity: 0;
+    transform: scale(0.8);
+    backdrop-filter: blur(4px);
+}
+
+.imagePreview:hover .removeImageButton {
+    opacity: 1;
+    transform: scale(1);
+}
+
+.removeImageButton:hover {
+    background: rgba(220, 53, 69, 1);
+    transform: scale(1.1);
+    box-shadow: 0 4px 12px rgba(220, 53, 69, 0.4);
+}
+
+/* Animação de entrada para novos selos */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.imageUploadContainer {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.5rem;
+    border: 2px dashed #e0e0e0;
+    border-radius: 8px;
+    background-color: #f9f9f9;
+    text-align: center;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.uploadButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 25px;
+    background: linear-gradient(135deg, #007BFF, #0056b3);
+    color: white;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0, 123, 255, 0.2);
+}
+
+.uploadButton:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0, 123, 255, 0.3);
+}
+
+.previewContainer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    margin-top: 1rem;
+    justify-content: center;
+}
+
+.previewItem {
+    position: relative;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    animation: fadeInUp 0.5s ease-out;
+}
+
+.previewItem:hover {
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+}
+
+.previewItem img {
+    width: 120px;
+    height: 120px;
+    object-fit: cover;
+    display: block;
+}
+
+.previewItem button {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    background-color: rgba(255, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.previewItem:hover button {
+    opacity: 1;
+}
+
+.activeSelo {
+    border-color: #007BFF;
+    box-shadow: 0 0 15px rgba(0, 123, 255, 0.5);
+}
+
+@media (max-width: 768px) {
+    .imageUploadContainer {
+        padding: 1rem;
+    }
+
+    .uploadButton {
+        padding: 0.5rem 1rem;
+    }
+
+    .previewItem img {
+        width: 100px;
+        height: 100px;
+    }
+}
+
+.imagePreview {
+    animation: fadeInUp 0.4s ease-out;
+}
+
+/* Estado vazio */
+.stampGroupBody:empty::after {
+    content: "Nenhum selo adicionado ainda. Clique no botão acima para adicionar selos de garantia.";
+    display: block;
+    text-align: center;
+    color: #718096;
+    font-style: italic;
+    padding: 40px 20px;
+}
+
+/* Responsividade para selos */
+@media screen and (max-width: 768px) {
+    .imageList {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        gap: 12px;
+    }
+    
+    .imagePreview img {
+        height: 100px;
+    }
+    
+    .uploadButton {
+        width: 100%;
+        justify-content: center;
+        padding: 14px 20px;
+    }
+    
+    .stampGroupBody {
+        padding: 15px;
+    }
+}
+
+@media screen and (max-width: 480px) {
+    .imageList {
+        grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+        gap: 10px;
+    }
+    
+    .imagePreview img {
+        height: 80px;
+    }
+    
+    .removeImageButton {
+        width: 24px;
+        height: 24px;
+        font-size: 10px;
+    }
+}

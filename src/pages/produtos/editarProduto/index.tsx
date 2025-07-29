@@ -73,6 +73,10 @@ const EditarProduto: React.FC = () => {
     const [existingImages, setExistingImages] = useState<any[]>([]);
     const [mapeamentoImagens, setMapeamentoImagens] = useState<{ file: File, type: string }[]>([]);
     const [imagensParaDeletar, setImagensParaDeletar] = useState<number[]>([]);
+    const [selos, setSelos] = useState<File[]>([]);
+    const [existingSelos, setExistingSelos] = useState<any[]>([]);
+    const [mapeamentoSelos, setMapeamentoSelos] = useState<{ file: File, type: string }[]>([]);
+    const [selosParaDeletar, setSelosParaDeletar] = useState<number[]>([]);
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [activeSubMenus, setActiveSubMenus] = useState<string[]>(['Produtos']);
     const [activeSection, setActiveSection] = useState('dados');
@@ -132,6 +136,7 @@ const EditarProduto: React.FC = () => {
     const sidebarRef = useRef<HTMLElement>(null);
     const fotosFileInputRef = useRef<HTMLInputElement>(null);
     const bannerFileInputRef = useRef<HTMLInputElement>(null);
+    const seloFileInputRef = useRef<HTMLInputElement>(null);
     
 
 
@@ -162,20 +167,30 @@ const EditarProduto: React.FC = () => {
     useEffect(() => {
         const fetchProductData = async () => {
             if (!produtoId) return;
-            const apiUrl = import.meta.env.VITE_API_URL;
+
             const token = localStorage.getItem('authToken');
-            if (!apiUrl || !token) {
-                console.error("API URL ou token não encontrado.");
+            if (!token) {
+                navigate('/');
                 return;
             }
+
+            const apiUrl = import.meta.env.VITE_API_URL;
+            if (!apiUrl) {
+                console.error("API URL não encontrada.");
+                return;
+            }
+
             try {
                 const response = await fetch(`${apiUrl}produto/listar-por-id/${produtoId}`, {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
-                if (!response.ok) throw new Error('Falha ao carregar dados do produto.');
-                
+
+                if (!response.ok) {
+                    throw new Error('Falha ao carregar dados do produto.');
+                }
+
                 const data = await response.json();
-                
+
                 setProdutoData(prevState => ({
                     ...prevState,
                     dadosProduto: data.dados.dadosProduto || prevState.dadosProduto,
@@ -185,7 +200,8 @@ const EditarProduto: React.FC = () => {
                 }));
 
                 if (data.dados.imagens) {
-                    setExistingImages(data.dados.imagens);
+                    setExistingImages(data.dados.imagens.filter((img: any) => img.tipoImagem !== 'SELO'));
+                    setExistingSelos(data.dados.imagens.filter((img: any) => img.tipoImagem === 'SELO'));
                 }
             } catch (error) {
                 console.error("Erro ao buscar produto:", error);
@@ -193,7 +209,7 @@ const EditarProduto: React.FC = () => {
         };
 
         fetchProductData();
-    }, [produtoId]);
+    }, [produtoId, navigate]);
 
     useEffect(() => {
         const sidebar = sidebarRef.current;
@@ -266,6 +282,49 @@ const EditarProduto: React.FC = () => {
 
     const handleSeloClick = (selo: string) => {
         setSeloSelecionado(selo);
+    };
+
+    const handlePlanoStatusChange = async (planoId: number, newStatus: string) => {
+        const updatedPlanos = produtoData.planos.map(plano => 
+            plano.id === planoId ? { ...plano, status: newStatus } : plano
+        );
+
+        const updatedProdutoData = { ...produtoData, planos: updatedPlanos };
+        setProdutoData(updatedProdutoData);
+
+        const formData = new FormData();
+        const dadosPayload = {
+            dados: updatedProdutoData,
+            mapeamentoImagens: [],
+            imagensParaDeletar: []
+        };
+
+        formData.append('dados', JSON.stringify(dadosPayload));
+
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+
+        if (!apiUrl || !token) {
+            console.error('URL da API ou token não configurado.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}produto/editar-produto/${produtoId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => response.text());
+                console.error('Falha ao atualizar o status do plano', errorData);
+            }
+        } catch (error) {
+            console.error('Erro ao atualizar o status do plano:', error);
+        }
     };
 
     const handleFileButtonClick = (ref: React.RefObject<HTMLInputElement | null>) => {
@@ -388,22 +447,19 @@ const handleSave = async () => {
 
         const formData = new FormData();
         
-        const mapeamentoParaEnvio = mapeamentoImagens
-            .filter(item => item.type !== 'SELO')
-            .map(item => ({
-                nomeArquivo: item.file.name,
-                tipo: item.type
-            }));
+        const mapeamentoImagensParaEnvio = mapeamentoImagens.map(item => ({ nomeArquivo: item.file.name, tipo: item.type }));
+        const mapeamentoSelosParaEnvio = mapeamentoSelos.map(item => ({ nomeArquivo: item.file.name, tipo: 'SELO' }));
 
         const dadosPayload = {
             dados: produtoData,
-            mapeamentoImagens: mapeamentoParaEnvio,
-            imagensParaDeletar: imagensParaDeletar
+            mapeamentoImagens: [...mapeamentoImagensParaEnvio, ...mapeamentoSelosParaEnvio],
+            imagensParaDeletar: [...imagensParaDeletar, ...selosParaDeletar]
         };
 
         formData.append('dados', JSON.stringify(dadosPayload));
 
-        imagens.forEach(file => {
+        const todasImagens = [...imagens, ...selos];
+        todasImagens.forEach(file => {
             formData.append('imagens', file);
         });
 
@@ -546,6 +602,25 @@ const handleSave = async () => {
         
         setImagens(prev => prev.filter((_, i) => i !== index));
         setMapeamentoImagens(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSeloFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files) {
+            const files = Array.from(event.target.files);
+            setSelos(prev => [...prev, ...files]);
+            const newMapeamento = files.map(file => ({ file, type: 'SELO' }));
+            setMapeamentoSelos(prev => [...prev, ...newMapeamento]);
+        }
+    };
+
+    const handleRemoveExistingSelo = (seloId: number) => {
+        setSelosParaDeletar(prev => [...prev, seloId]);
+        setExistingSelos(prev => prev.filter(selo => selo.id !== seloId));
+    };
+
+    const handleRemoveNewSelo = (index: number) => {
+        setSelos(prev => prev.filter((_, i) => i !== index));
+        setMapeamentoSelos(prev => prev.filter((_, i) => i !== index));
     };
 
     const handleAddPergunta = () => {
@@ -1181,25 +1256,27 @@ const handleSave = async () => {
                                             </div>
                                         </div>
                                         <div className={styles.dataCol}>
-                                            <div className={styles.stampGroup}>
-                                                <label className={styles.label} htmlFor="email">
-                                                    Selo de Garantia
-                                                </label>
-                                                <div className={styles.stampGroupBody}>
-                                                    {['Selo 1', 'Selo 2', 'Selo 3', 'Selo 4', 'Selo 5', 'Selo 6', 'Selo 7'].map(selo => (
-                                                        <div
-                                                            key={selo}
-                                                            className={`${styles.stamp} ${seloSelecionado === selo ? styles.active : ''}`}
-                                                            onClick={() => handleSeloClick(selo)}
-                                                        >
-                                                            <div className={styles.stampHead}>{selo}</div>
-                                                            <div className={styles.stampBody}>
-                                                                <img
-                                                                    className={styles.stampImg}
-                                                                    src={seloGarantiaImg}
-                                                                    alt="Selo de Garantia"
-                                                                />
-                                                            </div>
+                                            <div className={styles.imageUploadContainer}>
+                                                <p>Selo de Garantia</p>
+                                                <input type="file" id="selo-upload" ref={seloFileInputRef} style={{ display: 'none' }} onChange={handleSeloFileChange} accept="image/*" multiple />
+                                                <button type="button" className={styles.uploadButton} onClick={() => seloFileInputRef.current?.click()}>
+                                                    <FaArrowUpFromBracket /> Adicionar Selo
+                                                </button>
+                                                <div className={styles.previewContainer}>
+                                                    {existingSelos.map((selo, index) => (
+                                                        <div key={`existing-selo-${selo.id}`} className={`${styles.previewItem} ${seloSelecionado === selo.id ? styles.activeSelo : ''}`}>
+                                                            <img src={selo.signedUrl} alt={`Selo ${index + 1}`} onClick={() => setSeloSelecionado(selo.id)} />
+                                                            <button onClick={() => handleRemoveExistingSelo(selo.id)} title="Remover selo">
+                                                                <FaTrashAltIcon />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                    {selos.map((file, index) => (
+                                                        <div key={`new-selo-${index}`} className={`${styles.previewItem} ${seloSelecionado === file.name ? styles.activeSelo : ''}`}>
+                                                            <img src={URL.createObjectURL(file)} alt={`Novo Selo ${index + 1}`} onClick={() => setSeloSelecionado(file.name)} />
+                                                            <button onClick={() => handleRemoveNewSelo(index)} title="Remover selo">
+                                                                <FaTrashAltIcon />
+                                                            </button>
                                                         </div>
                                                     ))}
                                                 </div>
@@ -1712,13 +1789,7 @@ const handleSave = async () => {
                                                                             className={styles.slideCheckbox}
                                                                             id={`planoAtivo${index}`}
                                                                             checked={plano.status === 'ATIVO'}
-                                                                            onChange={(e) => {
-                                                                                const newStatus = e.target.checked ? 'ATIVO' : 'INATIVO';
-                                                                                const updatedPlanos = produtoData.planos.map((p, i) => 
-                                                                                    i === index ? { ...p, status: newStatus } : p
-                                                                                );
-                                                                                setProdutoData({ ...produtoData, planos: updatedPlanos });
-                                                                            }}
+                                                                            onChange={() => handlePlanoStatusChange(plano.id, plano.status === 'ATIVO' ? 'INATIVO' : 'ATIVO')}
                                                                         />
                                                                         <label
                                                                             className={styles.slideSwitch}

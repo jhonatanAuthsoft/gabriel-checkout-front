@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { IMaskInput, IMask } from 'react-imask';
 import styles from './styles.module.css';
 import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaSearch, FaSort, FaChevronLeft, FaChevronRight, FaFilePdf, FaFileExcel } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaFileExport } from 'react-icons/fa6';
@@ -12,16 +13,98 @@ interface Cliente {
     dataCriacao: string;
 }
 
+const DateInput = ({ id, name, label, value, onChange }: { id: string, name: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
+    const [isFocused, setIsFocused] = useState(false);
+    const [displayValue, setDisplayValue] = useState('');
+
+    useEffect(() => {
+        setDisplayValue(value ? value.split('-').reverse().join('/') : '');
+    }, [value]);
+
+    const handleAccept = (value: any, mask: any) => {
+        setDisplayValue(mask.masked.value);
+    };
+
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        setIsFocused(false);
+        const parts = displayValue.split('/');
+        let newValue = '';
+
+        if (parts.length === 3 && parts[0].length === 2 && parts[1].length === 2 && parts[2].length === 4) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10);
+            const year = parseInt(parts[2], 10);
+
+            const daysInMonth = new Date(year, month, 0).getDate();
+            if (day > 0 && day <= daysInMonth && month > 0 && month <= 12 && year > 1900) {
+                newValue = `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+        }
+
+        const event = {
+            target: {
+                name,
+                value: newValue
+            }
+        } as React.ChangeEvent<HTMLInputElement>;
+
+        onChange(event);
+    };
+
+    const hasValue = !!displayValue;
+
+    return (
+        <div className={styles.dateInputWrapper}>
+            <IMaskInput
+                mask="d/m/Y"
+                blocks={{
+                    d: {
+                        mask: IMask.MaskedRange,
+                        from: 1,
+                        to: 31,
+                        maxLength: 2,
+                    },
+                    m: {
+                        mask: IMask.MaskedRange,
+                        from: 1,
+                        to: 12,
+                        maxLength: 2,
+                    },
+                    Y: {
+                        mask: IMask.MaskedRange,
+                        from: 100,
+                        to: new Date().getFullYear() + 100,
+                    }
+                }}
+                placeholder=" "
+                className={`${styles.filterInput} ${styles.dateInput}`}
+                id={id}
+                name={name}
+                value={displayValue}
+                onAccept={handleAccept}
+                onFocus={() => setIsFocused(true)}
+                onBlur={handleBlur}
+            />
+            <label htmlFor={id} className={`${styles.dateLabel} ${isFocused || hasValue ? styles.dateFocused : ''}`}>
+                {label}
+            </label>
+        </div>
+    );
+};
+
 const Clientes: React.FC = () => {
     const [isSidebarActive, setSidebarActive] = useState(false);
     const [openSubMenus, setOpenSubMenus] = useState<string[]>(['Configurações']);
     const overlayRef = useRef<HTMLDivElement>(null);
     const [allClients, setAllClients] = useState<Cliente[]>([]);
+    const [filteredAndSortedClients, setFilteredAndSortedClients] = useState<Cliente[]>([]);
     const [clientes, setClientes] = useState<Cliente[]>([]);
     const [page, setPage] = useState(0);
     const [totalPages, setTotalPages] = useState(0);
     const [filtroNome, setFiltroNome] = useState('');
     const [filtroEmail, setFiltroEmail] = useState('');
+    const [dataInicio, setDataInicio] = useState('');
+    const [dataFim, setDataFim] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isExportMenuOpen, setExportMenuOpen] = useState(false);
     const exportMenuRef = useRef<HTMLDivElement>(null);
@@ -31,6 +114,10 @@ const Clientes: React.FC = () => {
         localStorage.removeItem('authToken');
         navigate('/');
     };
+
+    useEffect(() => {
+        setPage(0);
+    }, [filtroNome, filtroEmail, dataInicio, dataFim]);
 
     useEffect(() => {
         const fetchAllClientes = async () => {
@@ -86,16 +173,50 @@ const Clientes: React.FC = () => {
             );
         }
 
+        if (dataInicio) {
+                const [year, month, day] = dataInicio.split('-').map(Number);
+                const startDate = new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+                filtered = filtered.filter(c => {
+                    if (!c.dataCriacao) return false;
+                    const clientDate = new Date(c.dataCriacao);
+                    return clientDate >= startDate;
+                });
+            }
+            if (dataFim) {
+                const [year, month, day] = dataFim.split('-').map(Number);
+                const endDate = new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+                filtered = filtered.filter(c => {
+                    if (!c.dataCriacao) return false;
+                    const clientDate = new Date(c.dataCriacao);
+                    return clientDate <= endDate;
+                });
+            }
+
+        // Ordenar por data de criação decrescente (mais recentes primeiro)
+        filtered.sort((a, b) => {
+            const timeA = new Date(a.dataCriacao).getTime();
+            const timeB = new Date(b.dataCriacao).getTime();
+
+            if (isNaN(timeA)) return 1;
+            if (isNaN(timeB)) return -1;
+
+            return timeB - timeA;
+        });
+
+        setFilteredAndSortedClients(filtered);
+        setPage(0);
+    }, [allClients, filtroNome, filtroEmail, dataInicio, dataFim]);
+
+    useEffect(() => {
         const itemsPerPage = 10;
-        setTotalPages(Math.ceil(filtered.length / itemsPerPage));
-        
-        const paginatedClients = filtered.slice(
+        setTotalPages(Math.ceil(filteredAndSortedClients.length / itemsPerPage));
+
+        const paginatedClients = filteredAndSortedClients.slice(
             page * itemsPerPage,
             (page + 1) * itemsPerPage
         );
         setClientes(paginatedClients);
-
-    }, [allClients, page, filtroNome, filtroEmail]);
+    }, [filteredAndSortedClients, page]);
 
     const handleDownload = async (format: 'pdf' | 'excel') => {
         const token = localStorage.getItem('authToken');
@@ -105,7 +226,18 @@ const Clientes: React.FC = () => {
             return;
         }
 
-        const url = `${apiUrl}relatorio/${format}/clientes`;
+        let url = `${apiUrl}relatorio/${format}/clientes`;
+        const params = new URLSearchParams();
+        if (dataInicio) {
+            params.append('dataInicial', dataInicio);
+        }
+        if (dataFim) {
+            params.append('dataFim', dataFim);
+        }
+
+        if (params.toString()) {
+            url += `?${params.toString()}`;
+        }
 
         try {
             const response = await fetch(url, {
@@ -263,9 +395,21 @@ const Clientes: React.FC = () => {
                     <h2 className={styles.pageTitle}>Clientes</h2>
                 </div>
                 <div className={styles.filterSection}>
+                    <div className={styles.filterRow}>
+                        <div className={styles.filterItem}>
+                            <input type="text" placeholder="Cliente" className={styles.filterInput} value={filtroNome} onChange={(e) => { setFiltroNome(e.target.value); setPage(0); }} />
+                        </div>
+                        <div className={styles.filterItem}>
+                            <input type="text" placeholder="E-mail" className={styles.filterInput} value={filtroEmail} onChange={(e) => { setFiltroEmail(e.target.value); setPage(0); }} />
+                        </div>
+                        <div className={styles.filterItem}>
+                            <DateInput id="dataInicio" name="dataInicio" label="Data Cadastro de" value={dataInicio} onChange={(e) => { setDataInicio(e.target.value); setPage(0); }} />
+                        </div>
+                        <div className={styles.filterItem}>
+                            <DateInput id="dataFim" name="dataFim" label="até" value={dataFim} onChange={(e) => { setDataFim(e.target.value); setPage(0); }} />
+                        </div>
+                    </div>
                     <div className={styles.filterActions}>
-                        <input type="text" placeholder="Cliente" className={styles.filterInput} value={filtroNome} onChange={(e) => { setFiltroNome(e.target.value); setPage(0); }} />
-                        <input type="text" placeholder="E-mail" className={styles.filterInput} value={filtroEmail} onChange={(e) => { setFiltroEmail(e.target.value); setPage(0); }} />
                         <div className={styles.exportContainer} ref={exportMenuRef}>
                             <button className={styles.exportInputBtn} onClick={() => setExportMenuOpen(prev => !prev)}>
                                 <FaFileExport />
@@ -301,13 +445,16 @@ const Clientes: React.FC = () => {
                                         <td colSpan={3} className={styles.noDataCell}>Nenhum cliente encontrado.</td>
                                     </tr>
                                 ) : (
-                                    clientes.map((client) => (
-                                        <tr key={client.id}>
-                                            <td>{client.nome}</td>
-                                            <td className={styles.urlText}>{client.email}</td>
-                                            <td>{client.dataCriacao ? new Date(client.dataCriacao).toLocaleDateString('pt-BR') : ''}</td>
-                                        </tr>
-                                    ))
+                                    clientes.map((client) => {
+                                        const formattedDate = client.dataCriacao ? client.dataCriacao.substring(0, 10).split('-').reverse().join('/') : '';
+                                        return (
+                                            <tr key={client.id}>
+                                                <td>{client.nome}</td>
+                                                <td className={styles.urlText}>{client.email}</td>
+                                                <td>{formattedDate}</td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -342,4 +489,4 @@ const Clientes: React.FC = () => {
     );
 };
 
-export default Clientes; 
+export default Clientes;

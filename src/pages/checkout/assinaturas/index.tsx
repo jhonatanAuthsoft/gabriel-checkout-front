@@ -1,17 +1,30 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
-import { FaBars, FaShoppingBag, FaCog, FaSearch, FaChevronDown, FaEllipsisV } from 'react-icons/fa';
+import { FaBars, FaShoppingBag, FaCog, FaSearch, FaChevronDown, FaEllipsisV, FaUndo } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaSquareWhatsapp } from 'react-icons/fa6';
+
+const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
+    <div className={styles.errorMessage}>
+        {message}
+    </div>
+);
 import jwt_decode from 'jwt-decode';
 import logo from '../../../assets/img/df.png';
 import productImg from '../../../assets/img/dfCirculo.png';
 
 interface Assinatura {
     id: string;
+    produto: {
+        dadosProduto: {
+            suporteGarantia: {
+                whatsappSuporte: number;
+            };
+        }
+    }
     venda: {
         id: number;
-    produto: {
+        produto: {
             dadosProduto: {
                 dadosGerais: {
                     nome: string;
@@ -21,6 +34,7 @@ interface Assinatura {
                 }
             }
         }
+        statusVenda: string;
     };
     plano: {
         nome: string;
@@ -53,6 +67,7 @@ const Assinaturas: React.FC = () => {
     const [filteredAssinaturas, setFilteredAssinaturas] = useState<Assinatura[]>([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOrder, setSortOrder] = useState('data');
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const navigate = useNavigate();
 
     const handleLogout = () => {
@@ -155,6 +170,50 @@ const Assinaturas: React.FC = () => {
         }
     };
 
+    const handleRefundRequest = async (vendaId: number) => {
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token) return;
+
+        if (!confirm('Tem certeza de que deseja solicitar o reembolso desta venda?')) return;
+        
+        try {
+            const response = await fetch(`${apiUrl}venda/solicitar-reembolso/${vendaId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    idProduto: "1",
+                    valorPago: 999.90,
+                    idPlano: "1",
+                    origemCompra: "PRIMEIRA_COMPRA",
+                    statusPagamento: "CARTAO",
+                    statusVenda: "REEMBOLSADO",
+                    tipoRecorrencia: "UNICA",
+                    idCliente: "1",
+                    idVendedor: null,
+                    dataReembolso: new Date().toISOString().split('T')[0] + 'T15:28:59'
+                })
+            });
+
+            if (response.ok) {
+                alert('Solicitação de reembolso enviada com sucesso!');
+                fetchAssinaturas();
+            } else {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Falha ao solicitar reembolso');
+            }
+        } catch (error: any) {
+            setErrorMessage(error.message || 'Erro ao solicitar reembolso');
+            setTimeout(() => setErrorMessage(null), 5000);
+            console.error("Erro ao solicitar reembolso:", error);
+        } finally {
+            setOpenMenuId(null);
+        }
+    };
+
     const toggleSidebar = () => {
         setIsSidebarActive(!isSidebarActive);
     };
@@ -191,12 +250,13 @@ const Assinaturas: React.FC = () => {
         return new Date(data).toLocaleDateString('pt-BR');
     };
 
-    const formatarStatus = (status: string) => {
-        switch (status) {
-            case 'ATIVA': return 'Ativa';
-            case 'CANCELADA': return 'Cancelada';
-            case 'INADIMPLENTE': return 'Inadimplente';
-            default: return status;
+    const formatarStatus = (statusVenda: string) => {
+        switch (statusVenda) {
+            case 'PENDENTE': return 'Pendente';
+            case 'FINALIZADO': return 'Finalizado';
+            case 'CANCELADO': return 'Cancelado';
+            case 'CARRINHO_ABANDONADO': return 'Carrinho Abandonado';
+            default: return statusVenda;
         }
     };
 
@@ -392,16 +452,22 @@ const Assinaturas: React.FC = () => {
                                                 <td>{assinatura.metodoPagamento || 'N/A'}</td>
                                                 <td className={styles['text-center']}>
                                                     <div className={styles.statusItens}>
-                                                        <span className={`${styles.statusProduto} ${styles[assinatura.statusAssinatura]}`}>{formatarStatus(assinatura.statusAssinatura)}</span>
+                                                        <span className={`${styles.statusProduto} ${styles[assinatura.statusAssinatura]}`}>{formatarStatus(assinatura.venda?.statusVenda)}</span>
                                                         <div className={styles.actionsContainer} ref={openMenuId === assinatura.id ? menuRef : null}>
                                                             <FaEllipsisV id={assinatura.id} className={styles.actionsBtn} onClick={(e) => toggleActionsMenu(assinatura.id, e)} />
-                                                            <FaSquareWhatsapp className={`${styles.actionsBtn} ${styles.whatsappBtn}`} />
+                                                            <a className={`${styles.actionsBtn} ${styles.whatsappBtn}`} href={`https://wa.me/${assinatura.produto?.dadosProduto?.suporteGarantia?.whatsappSuporte}`}><FaSquareWhatsapp  /></a>
                                                             {openMenuId === assinatura.id && (
                                                                 <div className={`${styles.actionsMenu} ${styles.show}`} data-menu-for={assinatura.id}>
-                                                                    {assinatura.statusAssinatura === 'ATIVA' &&
-                                                                        <a href="#" onClick={() => handleCancelSubscription(assinatura.id)}>Cancelar assinatura</a>
+                                                                    {assinatura.venda?.statusVenda === 'FINALIZADO' && (
+                                                                        <>
+                                                                            <a href="#" className={styles.refundBtn} onClick={() => handleRefundRequest(assinatura.venda.id)}>
+                                                                                <FaUndo /> Solicitar reembolso
+                                                                            </a>
+                                                                        </>
+                                                                    )}
+                                                                    {assinatura.venda?.statusVenda != 'FINALIZADO' &&
+                                                                        <a href="#" onClick={handleChangePaymentClick}>Alterar forma de pagamento</a>
                                                                     }
-                                                                    <a href="#" onClick={handleChangePaymentClick}>Alterar forma de pagamento</a>
                                                                 </div>
                                                             )}
                                                         </div>
@@ -416,6 +482,8 @@ const Assinaturas: React.FC = () => {
                     </>
                 )}
             </main>
+            
+            {errorMessage && <ErrorMessage message={errorMessage} />}
         </div>
     );
 };

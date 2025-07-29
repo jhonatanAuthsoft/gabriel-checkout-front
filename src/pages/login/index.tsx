@@ -46,7 +46,6 @@ const Login = () => {
                 const token = data.token;
                 localStorage.setItem('authToken', token);
 
-                // A permissão do usuário vem diretamente na resposta do login.
                 const userPermission = data.usuarioRespose.permissao;
 
                 if (userPermission === 'ADMIN' || userPermission === 'FUNCIONARIO') {
