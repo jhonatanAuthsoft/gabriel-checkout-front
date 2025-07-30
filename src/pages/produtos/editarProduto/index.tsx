@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import styles from './styles.module.css';
 import { FaShoppingBag, FaCog, FaPlus, FaMinus, FaCheck, FaCopy, FaCheckCircle, FaPencilAlt, FaTrashAlt, FaSearch, FaShieldAlt } from 'react-icons/fa';
-import { FaTrashAlt as FaTrashAltIcon } from 'react-icons/fa';
 import { FaBars, FaArrowRightFromBracket, FaChevronDown, FaBox, FaArrowUpFromBracket } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 import seloGarantiaImg from '../../../assets/img/seloGarantia.png';
@@ -37,7 +36,7 @@ const EditarProduto: React.FC = () => {
             },
             cobranca: {
                 tipoCobranca: 'UNICA',
-                peridiocidade: 'MENSAL',
+                periodicidade: 'MENSAL',
                 preco: 0,
                 gratis: false,
                 tipoPrimeiraParcela: 'IGUAL',
@@ -66,7 +65,8 @@ const EditarProduto: React.FC = () => {
             perguntas: [] as { id?: number; pergunta: string; resposta: string }[]
         },
         planos: [] as any[],
-        cupom: [] as any[]
+        cupom: [] as any[],
+        upsell: [] as any[]
     });
     
     const [imagens, setImagens] = useState<File[]>([]);
@@ -97,6 +97,55 @@ const EditarProduto: React.FC = () => {
     const [paginaVenda, setPaginaVenda] = useState('proprio');
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     useEffect(() => {
+        const fetchProducts = async () => {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                navigate('/');
+                return;
+            }
+
+            const apiUrl = import.meta.env.VITE_API_URL;
+            if (!apiUrl) {
+                console.error("API URL não encontrada.");
+                return;
+            }
+
+            try {
+                const response = await fetch(`${apiUrl}produto/listar-todos?nome_busca=&page=0&size=100`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => response.text());
+                    console.error('Falha ao carregar lista de produtos', errorData);
+                    
+                    let errorMessage = 'Erro ao carregar lista de produtos.';
+                    if (typeof errorData === 'object' && errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (typeof errorData === 'string') {
+                        errorMessage = errorData;
+                    }
+                    
+                    setErrorMessage(errorMessage);
+                    setTimeout(() => setErrorMessage(null), 5000);
+                    return;
+                }
+
+                const data = await response.json();
+                const activeProducts = data.content.filter((produto: { status: string }) => produto.status === 'ATIVO');
+                setAllProducts(activeProducts);
+            } catch (error) {
+                console.error(error);
+                
+                setErrorMessage('Erro de conexão ao carregar lista de produtos.');
+                setTimeout(() => setErrorMessage(null), 5000);
+            }
+        };
+
+        fetchProducts();
+    }, []);
+
+    useEffect(() => {
         if (produtoData.dadosProduto.cobranca.gratis) {
             setProdutoData(prev => ({
                 ...prev,
@@ -111,11 +160,16 @@ const EditarProduto: React.FC = () => {
         }
     }, [produtoData.dadosProduto.cobranca.gratis]);
 
-    const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '', status: '' };
+    const initialPlanoState = { nome: '', periodicidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '', status: 'ATIVO' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
     const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
     const [newCupom, setNewCupom] = useState(initialCupomState);
+
+    const initialUpsellState = { produto: '', plano: '' };
+    const [newUpsell, setNewUpsell] = useState(initialUpsellState);
+    const [allProducts, setAllProducts] = useState<any[]>([]);
+    const [selectedProduct, setSelectedProduct] = useState<any | null>(null);
 
     useEffect(() => {
         if (newCupom.tipoDesconto === 'PERCENTUAL' && newCupom.valor > 100) {
@@ -186,10 +240,31 @@ const EditarProduto: React.FC = () => {
                 });
 
                 if (!response.ok) {
-                    throw new Error('Falha ao carregar dados do produto.');
+                    const errorData = await response.json().catch(() => response.text());
+                    console.error('Falha ao carregar dados do produto', errorData);
+                    
+                    let errorMessage = 'Erro ao carregar dados do produto.';
+                    if (typeof errorData === 'object' && errorData.message) {
+                        errorMessage = errorData.message;
+                    } else if (typeof errorData === 'string') {
+                        errorMessage = errorData;
+                    }
+                    
+                    setErrorMessage(errorMessage);
+                    setTimeout(() => setErrorMessage(null), 5000);
+                    return;
                 }
 
                 const data = await response.json();
+
+                const upsellsFromAPI = data.dados.produtosUpsell || [];
+                const upsellsFormatted = upsellsFromAPI.map((item: any) => ({
+                    produto: JSON.stringify({ 
+                        id: item.produto.id, 
+                        nome: item.produto.dadosProduto?.dadosGerais?.nome || '' 
+                    }),
+                    plano: JSON.stringify({ id: item.plano.id, nome: item.plano.nome || '' })
+                }));
 
                 setProdutoData(prevState => ({
                     ...prevState,
@@ -197,6 +272,7 @@ const EditarProduto: React.FC = () => {
                     checkoutProduto: data.dados.checkoutProduto || prevState.checkoutProduto,
                     planos: data.dados.planos || prevState.planos,
                     cupom: data.dados.cupom || prevState.cupom,
+                    upsell: upsellsFormatted
                 }));
 
                 if (data.dados.imagens) {
@@ -205,6 +281,9 @@ const EditarProduto: React.FC = () => {
                 }
             } catch (error) {
                 console.error("Erro ao buscar produto:", error);
+                
+                setErrorMessage('Erro de conexão ao carregar produto. Verifique sua internet e tente novamente.');
+                setTimeout(() => setErrorMessage(null), 5000);
             }
         };
 
@@ -293,8 +372,29 @@ const EditarProduto: React.FC = () => {
         setProdutoData(updatedProdutoData);
 
         const formData = new FormData();
+        
+        const produtosUpsell = updatedProdutoData.upsell.map(item => {
+            const produto = typeof item.produto === 'string' ? JSON.parse(item.produto) : item.produto;
+            const plano = typeof item.plano === 'string' ? JSON.parse(item.plano) : item.plano;
+            return {
+                produto: { id: produto.id },
+                plano: { id: plano.id }
+            };
+        });
+        
+        const planosLimpos = updatedProdutoData.planos.map(plano => {
+            const { dataAtualizacao, dataCriacao, dataDelecao, ...planoLimpo } = plano;
+            return planoLimpo;
+        });
+
         const dadosPayload = {
-            dados: updatedProdutoData,
+            dados: {
+                dadosProduto: updatedProdutoData.dadosProduto,
+                checkoutProduto: updatedProdutoData.checkoutProduto,
+                planos: planosLimpos,
+                cupom: updatedProdutoData.cupom,
+                produtosUpsell: produtosUpsell
+            },
             mapeamentoImagens: [],
             imagensParaDeletar: []
         };
@@ -321,9 +421,22 @@ const EditarProduto: React.FC = () => {
             if (!response.ok) {
                 const errorData = await response.json().catch(() => response.text());
                 console.error('Falha ao atualizar o status do plano', errorData);
+                
+                let errorMessage = 'Erro ao atualizar status do plano.';
+                if (typeof errorData === 'object' && errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+                
+                setErrorMessage(errorMessage);
+                setTimeout(() => setErrorMessage(null), 5000);
             }
         } catch (error) {
             console.error('Erro ao atualizar o status do plano:', error);
+            
+            setErrorMessage('Erro de conexão ao atualizar status do plano.');
+            setTimeout(() => setErrorMessage(null), 5000);
         }
     };
 
@@ -393,6 +506,64 @@ const EditarProduto: React.FC = () => {
         });
     };
 
+    const handleProductSelect = async (productId: string) => {
+        if (!productId) {
+            setSelectedProduct(null);
+            setNewUpsell(initialUpsellState);
+            return;
+        }
+
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+
+        if (!apiUrl || !token) {
+            console.error('URL da API ou token não configurado.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}produto/listar-por-id/${productId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => response.text());
+                console.error('Falha ao carregar dados do produto para upsell', errorData);
+                
+                let errorMessage = 'Erro ao carregar produto para upsell.';
+                if (typeof errorData === 'object' && errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+                
+                setErrorMessage(errorMessage);
+                setTimeout(() => setErrorMessage(null), 5000);
+                return;
+            }
+
+            const data = await response.json();
+            
+            if (data && data.dados) {
+                setSelectedProduct(data.dados);
+                const productName = data.dados.dadosProduto?.dadosGerais?.nome || '';
+                const productInfo = { id: parseInt(productId, 10), nome: productName };
+                setNewUpsell({ produto: JSON.stringify(productInfo), plano: '' });
+            } else {
+                setSelectedProduct(null);
+                setNewUpsell(initialUpsellState);
+            }
+
+        } catch (error) {
+            console.error("Erro ao buscar produto para upsell:", error);
+            setSelectedProduct(null);
+            
+            setErrorMessage('Erro de conexão ao carregar produto para upsell.');
+            setTimeout(() => setErrorMessage(null), 5000);
+            setNewUpsell(initialUpsellState);
+        }
+    };
+
 const validateProductData = () => {
     const errors: string[] = [];
     const { dadosGerais, formatoCategoria, cobranca, suporteGarantia, urlPersonalizada } = produtoData.dadosProduto;
@@ -450,8 +621,28 @@ const handleSave = async () => {
         const mapeamentoImagensParaEnvio = mapeamentoImagens.map(item => ({ nomeArquivo: item.file.name, tipo: item.type }));
         const mapeamentoSelosParaEnvio = mapeamentoSelos.map(item => ({ nomeArquivo: item.file.name, tipo: 'SELO' }));
 
+        const produtosUpsell = produtoData.upsell.map(item => {
+            const produto = typeof item.produto === 'string' ? JSON.parse(item.produto) : item.produto;
+            const plano = typeof item.plano === 'string' ? JSON.parse(item.plano) : item.plano;
+            return {
+                produto: { id: produto.id },
+                plano: { id: plano.id }
+            };
+        });
+
+        const planosLimpos = produtoData.planos.map(plano => {
+            const { dataAtualizacao, dataCriacao, dataDelecao, ...planoLimpo } = plano;
+            return planoLimpo;
+        });
+
         const dadosPayload = {
-            dados: produtoData,
+            dados: {
+                dadosProduto: produtoData.dadosProduto,
+                checkoutProduto: produtoData.checkoutProduto,
+                planos: planosLimpos,
+                cupom: produtoData.cupom,
+                produtosUpsell: produtosUpsell
+            },
             mapeamentoImagens: [...mapeamentoImagensParaEnvio, ...mapeamentoSelosParaEnvio],
             imagensParaDeletar: [...imagensParaDeletar, ...selosParaDeletar]
         };
@@ -495,9 +686,26 @@ const handleSave = async () => {
             } else {
                 const errorData = await response.json().catch(() => response.text());
                 console.error('Falha ao salvar produto', errorData);
+                console.log('Dados dos planos enviados:', JSON.stringify(produtoData.planos, null, 2));
+                
+                let errorMessage = 'Erro ao salvar produto.';
+                if (typeof errorData === 'object' && errorData.message) {
+                    errorMessage = errorData.message;
+                } else if (typeof errorData === 'string') {
+                    errorMessage = errorData;
+                }
+                
+                console.log('Status da resposta:', response.status);
+                console.log('Número de planos:', produtoData.planos.length);
+                
+                setErrorMessage(errorMessage);
+                setTimeout(() => setErrorMessage(null), 5000);
             }
         } catch (error) {
             console.error('Erro:', error);
+            
+            setErrorMessage('Erro de conexão. Verifique sua internet e tente novamente.');
+            setTimeout(() => setErrorMessage(null), 5000);
         }
     };
 
@@ -680,9 +888,14 @@ const handleSave = async () => {
     };
 
     const handleAddPlano = (novoPlano: any) => {
+        const planoComIdNulo = {
+            ...novoPlano,
+            id: ''
+        };
+
         setProdutoData(prev => ({
             ...prev,
-            planos: [...prev.planos, novoPlano]
+            planos: [...prev.planos, planoComIdNulo]
         }));
     };
 
@@ -745,6 +958,27 @@ const handleSave = async () => {
         setProdutoData(prev => ({
             ...prev,
             cupom: prev.cupom.filter((_, i) => i !== index)
+        }));
+    };
+
+    const handleAddUpsell = (novoUpsell: any) => {
+        if (!novoUpsell.produto || !novoUpsell.plano) {
+            alert('Por favor, selecione um produto e um plano antes de adicionar o upsell.');
+            return;
+        }
+        
+        setProdutoData(prev => ({
+            ...prev,
+            upsell: [...prev.upsell, novoUpsell]
+        }));
+        setNewUpsell(initialUpsellState);
+        setSelectedProduct(null);
+    };
+
+    const handleRemoveUpsell = (index: number) => {
+        setProdutoData(prev => ({
+            ...prev,
+            upsell: prev.upsell.filter((_, i) => i !== index)
         }));
     };
 
@@ -844,6 +1078,7 @@ const handleSave = async () => {
                             <button className={`${styles.selectorBtn} ${activeSection === 'checkout' ? styles.active : ''}`} onClick={() => handleSectionChange('checkout')}>Checkout</button>
                             <button className={`${styles.selectorBtn} ${activeSection === 'plano' ? styles.active : ''}`} onClick={() => handleSectionChange('plano')}>Plano</button>
                             <button className={`${styles.selectorBtn} ${activeSection === 'cupom' ? styles.active : ''}`} onClick={() => handleSectionChange('cupom')}>Cupom</button>
+                            <button className={`${styles.selectorBtn} ${activeSection === 'upsell' ? styles.active : ''}`} onClick={() => handleSectionChange('upsell')}>Upsell</button>
                         </div>
                     </div>
 
@@ -991,7 +1226,7 @@ const handleSave = async () => {
                                                         <label className={styles.label} htmlFor="periodicidade">
                                                             Periodicidade
                                                         </label>
-                                                        <select className={styles.filterSelect} name="dadosProduto.cobranca.peridiocidade" value={produtoData.dadosProduto.cobranca.peridiocidade} onChange={(e) => handleInputChange(e.target.name, e.target.value)}>
+                                                        <select className={styles.filterSelect} name="dadosProduto.cobranca.periodicidade" value={produtoData.dadosProduto.cobranca.periodicidade} onChange={(e) => handleInputChange(e.target.name, e.target.value)}>
                                                             <option value="MENSAL">Mensal</option>
                                                             <option value="BIMESTRAL">Bimestral</option>
                                                             <option value="TRIMESTRAL">Trimestral</option>
@@ -1267,7 +1502,7 @@ const handleSave = async () => {
                                                         <div key={`existing-selo-${selo.id}`} className={`${styles.previewItem} ${seloSelecionado === selo.id ? styles.activeSelo : ''}`}>
                                                             <img src={selo.signedUrl} alt={`Selo ${index + 1}`} onClick={() => setSeloSelecionado(selo.id)} />
                                                             <button onClick={() => handleRemoveExistingSelo(selo.id)} title="Remover selo">
-                                                                <FaTrashAltIcon />
+                                                                <FaTrashAlt />
                                                             </button>
                                                         </div>
                                                     ))}
@@ -1275,7 +1510,7 @@ const handleSave = async () => {
                                                         <div key={`new-selo-${index}`} className={`${styles.previewItem} ${seloSelecionado === file.name ? styles.activeSelo : ''}`}>
                                                             <img src={URL.createObjectURL(file)} alt={`Novo Selo ${index + 1}`} onClick={() => setSeloSelecionado(file.name)} />
                                                             <button onClick={() => handleRemoveNewSelo(index)} title="Remover selo">
-                                                                <FaTrashAltIcon />
+                                                                <FaTrashAlt />
                                                             </button>
                                                         </div>
                                                     ))}
@@ -1546,7 +1781,7 @@ const handleSave = async () => {
                                                 </div>
                                                 <div className={styles.faqActions}>
                                                     <button type="button" onClick={() => handleDeletePergunta(index)} className={styles.deleteButton}>
-                                                        <FaTrashAltIcon size={16} />
+                                                        <FaTrashAlt size={16} />
                                                     </button>
                                                 </div>
                                             </div>
@@ -1592,8 +1827,8 @@ const handleSave = async () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="MENSAL"
-                                                                    checked={newPlano.peridiocidade === 'MENSAL'}
-                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
+                                                                    checked={newPlano.periodicidade === 'MENSAL'}
+                                                    onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Mensal
@@ -1603,8 +1838,8 @@ const handleSave = async () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="TRIMESTRAL"
-                                                                    checked={newPlano.peridiocidade === 'TRIMESTRAL'}
-                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
+                                                                    checked={newPlano.periodicidade === 'TRIMESTRAL'}
+                                                    onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Trimestral
@@ -1614,8 +1849,8 @@ const handleSave = async () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="SEMESTRAL"
-                                                                    checked={newPlano.peridiocidade === 'SEMESTRAL'}
-                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
+                                                                    checked={newPlano.periodicidade === 'SEMESTRAL'}
+                                                    onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Semestral
@@ -1625,8 +1860,8 @@ const handleSave = async () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="ANUAL"
-                                                                    checked={newPlano.peridiocidade === 'ANUAL'}
-                                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
+                                                                    checked={newPlano.periodicidade === 'ANUAL'}
+                                                    onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Anual
@@ -1662,7 +1897,7 @@ const handleSave = async () => {
                                                     type="checkbox"
                                                     className={styles.slideCheckbox}
                                                     id="planoStatus"
-                                                    checked={newPlano.status === 'ATIVO'}
+                                                    checked={true}
                                                     onChange={(e) => setNewPlano(p => ({...p, status: e.target.checked ? 'ATIVO' : 'INATIVO'}))}
                                                 />
                                                 <label className={styles.slideSwitch} htmlFor="planoStatus">
@@ -1762,7 +1997,7 @@ const handleSave = async () => {
                                                                     </button>
                                                                         {plano.nome}
                                                                 </td>
-                                                                    <td>{plano.peridiocidade}</td>
+                                                                    <td>{plano.periodicidade}</td>
                                                                 <td>
                                                                     <div className={styles.urlCheckoutContainer}>
                                                                             <input
@@ -1881,6 +2116,268 @@ const handleSave = async () => {
                         </div>
                     )}
                     
+                    {activeSection === 'upsell' && (
+                        <div className={styles.contentSection} id="upsellSection">
+                            <div className={styles.contentCard}>
+                                <div className={styles.contentCardHeader}>
+                                    <h2 className={styles.contentCardTitle}>
+                                        <FaArrowUpFromBracket style={{ marginRight: '8px', color: '#0070E1' }} />
+                                        Configurar Upsells
+                                    </h2>
+                                    <p style={{ margin: '8px 0 0 0', fontSize: '14px', color: '#666', fontWeight: 'normal' }}>
+                                        Adicione produtos complementares para aumentar suas vendas
+                                    </p>
+                                </div>
+                                <div className={styles.contentCardBody}>
+                                    <div style={{ 
+                                        background: 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)', 
+                                        border: '1px solid #e2e8f0', 
+                                        borderRadius: '12px', 
+                                        padding: '24px', 
+                                        marginBottom: '24px',
+                                        boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                                    }}>
+                                        <h3 style={{ 
+                                            margin: '0 0 16px 0', 
+                                            fontSize: '16px', 
+                                            fontWeight: '600', 
+                                            color: '#1e293b',
+                                            display: 'flex',
+                                            alignItems: 'center'
+                                        }}>
+                                            <FaPlus style={{ marginRight: '8px', color: '#0070E1' }} />
+                                            Adicionar Novo Upsell
+                                        </h3>
+                                        
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '20px' }}>
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="upsellProduto" style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    marginBottom: '8px',
+                                                    fontWeight: '500',
+                                                    color: '#374151'
+                                                }}>
+                                                    <FaBox style={{ marginRight: '6px', color: '#6b7280' }} />
+                                                    Produto
+                                                </label>
+                                                <select 
+                                                    name="upsellProduto" 
+                                                    className={styles.input}
+                                                    style={{
+                                                        border: '2px solid #e5e7eb',
+                                                        borderRadius: '8px',
+                                                        padding: '12px 16px',
+                                                        fontSize: '14px',
+                                                        transition: 'all 0.2s ease',
+                                                        background: '#fff'
+                                                    }}
+                                                    value={selectedProduct?.id || ''}
+                                                    onChange={e => handleProductSelect(e.target.value)}
+                                                >
+                                                    <option value="">🔍 Selecione um produto</option>
+                                                    {allProducts.map(product => (
+                                                        <option key={product.id} value={product.id}>📦 {product.nome}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            
+                                            <div className={styles.inputGroup}>
+                                                <label className={styles.label} htmlFor="upsellPlano" style={{ 
+                                                    display: 'flex', 
+                                                    alignItems: 'center', 
+                                                    marginBottom: '8px',
+                                                    fontWeight: '500',
+                                                    color: '#374151'
+                                                }}>
+                                                    <FaShieldAlt style={{ marginRight: '6px', color: '#6b7280' }} />
+                                                    Plano
+                                                </label>
+                                                <select 
+                                                    name="upsellPlano" 
+                                                    className={styles.input}
+                                                    style={{
+                                                        border: '2px solid #e5e7eb',
+                                                        borderRadius: '8px',
+                                                        padding: '12px 16px',
+                                                        fontSize: '14px',
+                                                        transition: 'all 0.2s ease',
+                                                        background: selectedProduct ? '#fff' : '#f9fafb',
+                                                        cursor: selectedProduct ? 'pointer' : 'not-allowed'
+                                                    }}
+                                                    value={newUpsell.plano ? (typeof newUpsell.plano === 'string' ? JSON.parse(newUpsell.plano)?.id : (newUpsell.plano as {id: number})?.id) : ''}
+                                                    onChange={e => {
+                                                        const plano = selectedProduct?.planos.find((p: any) => p.id === parseInt(e.target.value));
+                                                        setNewUpsell({ ...newUpsell, plano: plano ? JSON.stringify({ id: plano.id, nome: plano.nome, preco: plano.preco }) : '' });
+                                                    }}
+                                                    disabled={!selectedProduct}
+                                                >
+                                                    <option value="">{selectedProduct ? '🎯 Selecione um plano' : '⚠️ Primeiro selecione um produto'}</option>
+                                                    {selectedProduct?.planos?.map((plano: any) => (
+                                                        <option key={plano.id} value={plano.id}>💎 {plano.nome}</option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                        </div>
+                                        
+                                        <button 
+                                            onClick={() => handleAddUpsell(newUpsell)}
+                                            style={{
+                                                background: 'linear-gradient(135deg, #0070E1 0%, #0056b3 100%)',
+                                                color: '#fff',
+                                                border: 'none',
+                                                borderRadius: '8px',
+                                                padding: '12px 24px',
+                                                fontSize: '14px',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '8px',
+                                                transition: 'all 0.2s ease',
+                                                boxShadow: '0 2px 4px rgba(0, 112, 225, 0.2)'
+                                            }}
+                                            onMouseEnter={e => {
+                                                e.currentTarget.style.transform = 'translateY(-1px)';
+                                                e.currentTarget.style.boxShadow = '0 4px 8px rgba(0, 112, 225, 0.3)';
+                                            }}
+                                            onMouseLeave={e => {
+                                                e.currentTarget.style.transform = 'translateY(0)';
+                                                e.currentTarget.style.boxShadow = '0 2px 4px rgba(0, 112, 225, 0.2)';
+                                            }}
+                                        >
+                                            <FaPlus />
+                                            Adicionar Upsell
+                                        </button>
+                                    </div>
+                                    
+                                    {produtoData.upsell.length > 0 && (
+                                        <div>
+                                            <h3 style={{ 
+                                                margin: '0 0 16px 0', 
+                                                fontSize: '16px', 
+                                                fontWeight: '600', 
+                                                color: '#1e293b',
+                                                display: 'flex',
+                                                alignItems: 'center'
+                                            }}>
+                                                <FaCheckCircle style={{ marginRight: '8px', color: '#10b981' }} />
+                                                Upsells Configurados ({produtoData.upsell.length})
+                                            </h3>
+                                            
+                                            <div style={{ display: 'grid', gap: '12px' }}>
+                                                {produtoData.upsell.map((item, index) => {
+                                                    const produto = typeof item.produto === 'string' ? JSON.parse(item.produto) : item.produto;
+                                                    const plano = typeof item.plano === 'string' ? JSON.parse(item.plano) : item.plano;
+                                                    return (
+                                                        <div 
+                                                            key={index} 
+                                                            style={{
+                                                                background: '#fff',
+                                                                border: '1px solid #e5e7eb',
+                                                                borderRadius: '8px',
+                                                                padding: '16px',
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                justifyContent: 'space-between',
+                                                                boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                                                                transition: 'all 0.2s ease'
+                                                            }}
+                                                            onMouseEnter={e => {
+                                                                e.currentTarget.style.borderColor = '#0070E1';
+                                                                e.currentTarget.style.boxShadow = '0 2px 6px rgba(0,0,0,0.15)';
+                                                            }}
+                                                            onMouseLeave={e => {
+                                                                e.currentTarget.style.borderColor = '#e5e7eb';
+                                                                e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                                                            }}
+                                                        >
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                                <div style={{
+                                                                    width: '40px',
+                                                                    height: '40px',
+                                                                    background: 'linear-gradient(135deg, #0070E1 0%, #0056b3 100%)',
+                                                                    borderRadius: '8px',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    color: '#fff'
+                                                                }}>
+                                                                    <FaArrowUpFromBracket size={16} />
+                                                                </div>
+                                                                <div>
+                                                                    <div style={{ 
+                                                                        fontWeight: '600', 
+                                                                        color: '#1e293b',
+                                                                        marginBottom: '4px'
+                                                                    }}>
+                                                                        📦 {produto.nome}
+                                                                    </div>
+                                                                    <div style={{ 
+                                                                        fontSize: '14px', 
+                                                                        color: '#6b7280'
+                                                                    }}>
+                                                                        💎 {plano.nome}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <button 
+                                                                onClick={() => handleRemoveUpsell(index)}
+                                                                style={{
+                                                                    background: '#fee2e2',
+                                                                    color: '#dc2626',
+                                                                    border: '1px solid #fecaca',
+                                                                    borderRadius: '6px',
+                                                                    padding: '8px',
+                                                                    cursor: 'pointer',
+                                                                    transition: 'all 0.2s ease',
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }}
+                                                                onMouseEnter={e => {
+                                                                    e.currentTarget.style.background = '#fecaca';
+                                                                    e.currentTarget.style.transform = 'scale(1.05)';
+                                                                }}
+                                                                onMouseLeave={e => {
+                                                                    e.currentTarget.style.background = '#fee2e2';
+                                                                    e.currentTarget.style.transform = 'scale(1)';
+                                                                }}
+                                                                title="Remover upsell"
+                                                            >
+                                                                <FaTrashAlt size={14} />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    )}
+                                    
+                                    {produtoData.upsell.length === 0 && (
+                                        <div style={{
+                                            textAlign: 'center',
+                                            padding: '40px 20px',
+                                            color: '#6b7280',
+                                            background: '#f9fafb',
+                                            borderRadius: '8px',
+                                            border: '2px dashed #d1d5db'
+                                        }}>
+                                            <FaArrowUpFromBracket size={32} style={{ marginBottom: '12px', opacity: 0.5 }} />
+                                            <p style={{ margin: '0 0 8px 0', fontSize: '16px', fontWeight: '500' }}>
+                                                Nenhum upsell configurado
+                                            </p>
+                                            <p style={{ margin: '0', fontSize: '14px' }}>
+                                                Adicione produtos complementares para aumentar suas vendas
+                                            </p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     {activeSection === 'cupom' && (
                         <div className={styles.contentSection} id="cupomSection">
                             {showCupomForm ? (

@@ -49,6 +49,22 @@ interface Imagem {
     signedUrl: string;
 }
 
+interface Upsell {
+    produto: {
+        id: string;
+        dadosProduto: {
+            dadosGerais: {
+                nome: string;
+            }
+        }
+    };
+    plano: {
+        id: number;
+        nome: string;
+        preco: number;
+    };
+}
+
 interface Product {
     id: string;
     dadosProduto: {
@@ -70,6 +86,7 @@ interface Product {
     planos: Plan[];
     cupom?: Cupom[];
     imagens: Imagem[];
+    produtosUpsell?: Upsell[];
 }
 
 const Checkout: React.FC = () => {
@@ -80,13 +97,13 @@ const Checkout: React.FC = () => {
     const [email, setEmail] = useState('');
     const [celular, setCelular] = useState('');
     const [cpf, setCpf] = useState('');
-    const [cep, setCep] = useState('');
-    const [logradouro, setLogradouro] = useState('');
-    const [numero, setNumero] = useState('');
-    const [complemento, setComplemento] = useState('');
-    const [bairro, setBairro] = useState('');
-    const [cidade, setCidade] = useState('');
-    const [uf, setUf] = useState('');
+    const [cep, setCep] = useState('01310100');
+    const [logradouro, setLogradouro] = useState('Avenida Paulista');
+    const [numero, setNumero] = useState('1000');
+    const [complemento, setComplemento] = useState('Sala 101');
+    const [bairro, setBairro] = useState('Bela Vista');
+    const [cidade, setCidade] = useState('São Paulo');
+    const [uf, setUf] = useState('SP');
 
     const [errors, setErrors] = useState<Record<string, string>>({});
     const [isFormValid, setIsFormValid] = useState(false);
@@ -108,6 +125,9 @@ const Checkout: React.FC = () => {
     const [discount, setDiscount] = useState(0);
     const [finalPrice, setFinalPrice] = useState(0);
 
+    const [selectedUpsells, setSelectedUpsells] = useState<{[key: string]: boolean}>({});
+    const [upsellsPrice, setUpsellsPrice] = useState(0);
+
     const [idVenda, setIdVenda] = useState<string | null>(null);
     const [pixData, setPixData] = useState<{ qrCode: string, copiaECola: string } | null>(null);
     const [boletoData, setBoletoData] = useState<string | null>(null);
@@ -118,11 +138,49 @@ const Checkout: React.FC = () => {
     const navigate = useNavigate();
     const { idProduto, idPlano } = useParams();
 
+    const handleUpsellToggle = (upsellKey: string) => {
+        setSelectedUpsells(prev => {
+            const newSelected = { ...prev };
+            if (newSelected[upsellKey]) {
+                delete newSelected[upsellKey];
+            } else {
+                newSelected[upsellKey] = true;
+            }
+            return newSelected;
+        });
+    };
+
+    useEffect(() => {
+        if (!product?.produtosUpsell) {
+            setUpsellsPrice(0);
+            return;
+        }
+
+        const newUpsellsPrice = product.produtosUpsell.reduce((total, upsell) => {
+            const upsellKey = `${upsell.produto.id}-${upsell.plano.id}`;
+            if (selectedUpsells[upsellKey]) {
+                return total + upsell.plano.preco;
+            }
+            return total;
+        }, 0);
+
+        setUpsellsPrice(newUpsellsPrice);
+    }, [selectedUpsells, product]);
+
+    const calculateFinalPrice = () => {
+        const basePrice = totalPrice - discount;
+        return basePrice + upsellsPrice;
+    };
+
     useEffect(() => {
         if (couponCode.trim() === '') {
             setDiscount(0);
         }
     }, [couponCode]);
+
+    useEffect(() => {
+        setFinalPrice(calculateFinalPrice());
+    }, [totalPrice, discount, upsellsPrice]);
 
     useEffect(() => {
         const validateForm = () => {
@@ -224,7 +282,6 @@ const Checkout: React.FC = () => {
                     });
                     if (response.ok) {
                         const data = await response.json();
-                        console.log('API Response:', data);
                         if (data?.statusPagamento === 'APROVADO') {
                             clearInterval(interval);
                             if (urlObrigado) {
@@ -408,9 +465,27 @@ const Checkout: React.FC = () => {
                     throw new Error('ID do cliente não retornado após o cadastro.');
                 }
 
-                const vendaPayload: { idProduto: string; idPlano: number; idCliente: any; codigoCupom?: string } = {
-                    idProduto: product.id,
-                    idPlano: selectedPlanoId,
+                const produtosUpsell = Object.keys(selectedUpsells)
+                    .filter(key => selectedUpsells[key])
+                    .map(key => {
+                        const [produtoId, planoId] = key.split('-');
+                        return {
+                            produto: { id: parseInt(produtoId) },
+                            plano: { id: parseInt(planoId) }
+                        };
+                    });
+
+                const upsellProductIds = produtosUpsell.map(upsell => upsell.produto.id);
+                const upsellPlanIds = produtosUpsell.map(upsell => upsell.plano.id);
+
+                const vendaPayload: { 
+                    idsProduto: number[]; 
+                    idsPlano: number[]; 
+                    idCliente: any; 
+                    codigoCupom?: string;
+                } = {
+                    idsProduto: [parseInt(product.id), ...upsellProductIds],
+                    idsPlano: [selectedPlanoId, ...upsellPlanIds],
                     idCliente: idCliente,
                 };
     
@@ -564,6 +639,50 @@ const Checkout: React.FC = () => {
                     />}
                     {step === 3 && <Confirmation />}
                     
+                    {}
+                    {step === 1 && product?.produtosUpsell && product.produtosUpsell.length > 0 && (
+                        <div className={styles.upsellSection}>
+                            <h3 className={styles.upsellTitle}>🎁 Produtos Recomendados</h3>
+                            <p className={styles.upsellSubtitle}>Aproveite e adicione estes produtos ao seu pedido com desconto especial!</p>
+                            
+                            <div className={styles.upsellGrid}>
+                                {product.produtosUpsell.map((upsell, index) => {
+                                    const upsellKey = `${upsell.produto.id}-${upsell.plano.id}`;
+                                    const isSelected = selectedUpsells[upsellKey] || false;
+                                    
+                                    return (
+                                        <div 
+                                            key={index} 
+                                            className={`${styles.upsellCard} ${isSelected ? styles.upsellCardSelected : ''}`}
+                                            onClick={() => handleUpsellToggle(upsellKey)}
+                                        >
+                                            <div className={styles.upsellCardHeader}>
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={isSelected}
+                                                    className={styles.upsellCheckbox}
+
+                                                />
+                                                <h4 className={styles.upsellProductName}>
+                                                    {upsell.produto.dadosProduto.dadosGerais.nome}
+                                                </h4>
+                                            </div>
+                                            
+                                            <div className={styles.upsellDetails}>
+                                                <p className={styles.upsellPlanName}>📋 {upsell.plano.nome}</p>
+                                                <p className={styles.upsellPrice}>💰 R$ {upsell.plano.preco.toFixed(2)}</p>
+                                            </div>
+                                            
+                                            <div className={styles.upsellBadge}>
+                                                {isSelected ? '✅ Adicionado' : '➕ Adicionar'}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                    
                     {errorMessage && <ErrorMessage message={errorMessage} />}
 
                     {step < 3 && (
@@ -596,6 +715,9 @@ const Checkout: React.FC = () => {
                         quantity={quantity}
                         onQuantityChange={setQuantity}
                         perguntas={product?.checkoutProduto?.perguntas || []}
+                        selectedUpsells={selectedUpsells}
+                        upsellsPrice={upsellsPrice}
+                        upsellsData={product?.produtosUpsell || []}
                     />
                 
                 

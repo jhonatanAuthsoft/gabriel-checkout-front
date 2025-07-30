@@ -203,66 +203,7 @@ const RegistrationForm: React.FC<RegistrationFormProps> = ({
                         {errors.cpf && touched.cpf && <p className={styles.errorText}>{errors.cpf}</p>}
                     </div>
                 </div>
-                <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                        <label>CEP</label>
-                        <div className={`${styles.inputWrapper} ${!errors.cep && touched.cep ? styles.valid : ''}`}>
-                            <input type="text" name="cep" placeholder="99999-999" value={formatCEP(cep)} onChange={handleCEPChange} onBlur={handleBlur} maxLength={9} />
-                            {!errors.cep && touched.cep && <div className={styles.validIcon}><FaCheck /></div>}
-                        </div>
-                        {errors.cep && touched.cep && <p className={styles.errorText}>{errors.cep}</p>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>Endereço</label>
-                        <div className={`${styles.inputWrapper} ${!errors.logradouro && touched.logradouro ? styles.valid : ''}`}>
-                            <input type="text" name="logradouro" placeholder="Rua, Avenida, etc." value={logradouro} onChange={handleChange(setLogradouro)} onBlur={handleBlur} />
-                            {!errors.logradouro && touched.logradouro && <div className={styles.validIcon}><FaCheck /></div>}
-                        </div>
-                        {errors.logradouro && touched.logradouro && <p className={styles.errorText}>{errors.logradouro}</p>}
-                    </div>
-                </div>
-                <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                        <label>Número</label>
-                        <div className={`${styles.inputWrapper} ${!errors.numero && touched.numero ? styles.valid : ''}`}>
-                            <input type="text" name="numero" placeholder="123" value={numero} onChange={handleChange(setNumero)} onBlur={handleBlur} />
-                            {!errors.numero && touched.numero && <div className={styles.validIcon}><FaCheck /></div>}
-                        </div>
-                        {errors.numero && touched.numero && <p className={styles.errorText}>{errors.numero}</p>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>Complemento</label>
-                        <div className={`${styles.inputWrapper}`}>
-                            <input type="text" name="complemento" placeholder="Apto, Bloco, etc." value={complemento} onChange={handleChange(setComplemento)} onBlur={handleBlur} />
-                        </div>
-                    </div>
-                </div>
-                <div className={styles.formRow}>
-                    <div className={styles.formGroup}>
-                        <label>Bairro</label>
-                        <div className={`${styles.inputWrapper} ${!errors.bairro && touched.bairro ? styles.valid : ''}`}>
-                            <input type="text" name="bairro" placeholder="Seu bairro" value={bairro} onChange={handleChange(setBairro)} onBlur={handleBlur} />
-                            {!errors.bairro && touched.bairro && <div className={styles.validIcon}><FaCheck /></div>}
-                        </div>
-                        {errors.bairro && touched.bairro && <p className={styles.errorText}>{errors.bairro}</p>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>Cidade</label>
-                        <div className={`${styles.inputWrapper} ${!errors.cidade && touched.cidade ? styles.valid : ''}`}>
-                            <input type="text" name="cidade" placeholder="Sua cidade" value={cidade} onChange={handleChange(setCidade)} onBlur={handleBlur} />
-                            {!errors.cidade && touched.cidade && <div className={styles.validIcon}><FaCheck /></div>}
-                        </div>
-                        {errors.cidade && touched.cidade && <p className={styles.errorText}>{errors.cidade}</p>}
-                    </div>
-                    <div className={styles.formGroup}>
-                        <label>UF</label>
-                        <div className={`${styles.inputWrapper} ${!errors.uf && touched.uf ? styles.valid : ''}`}>
-                        <input type="text" name="uf" placeholder="UF" value={uf} onChange={handleChange(setUf)} onBlur={handleBlur} maxLength={2} />
-                        {!errors.uf && touched.uf && <div className={styles.validIcon}><FaCheck /></div>}
-                    </div>
-                        {errors.uf && touched.uf && <p className={styles.errorText}>{errors.uf}</p>}
-                    </div>
-                </div>
+                {/* Campos de endereço ocultos - valores hardcoded no estado do componente pai */}
             </div>
         </div>
     );

@@ -647,29 +647,28 @@ const Relatorios = () => {
             String(now.getSeconds()).padStart(2, '0') + ':' + 
             String(now.getMilliseconds()).padStart(3, '0');
 
-        const payload = {
-            "idProduto": sale.produto.id,
-            "valorPago": sale.valor,
-            "idPlano": sale.idPlano,
-            "origemCompra": sale.origemCompra,
-            "metodoPagamento": sale.tipoPagamento,
-            "statusPagamento": "REEMBOLSADO",
-            "statusVenda": "CANCELADO",
-            "tipoRecorrencia": sale.tipoRecorrencia,
-            "idCliente": sale.cliente.id,
-            "idVendedor": sale.vendedor,
-            "dataReembolso": dataReembolso
-        };
+        // const payload = {
+        //     "idProduto": sale.produto.id,
+        //     "valorPago": sale.valor,
+        //     "idPlano": sale.idPlano, 
+        //     "origemCompra": sale.origemCompra,
+        //     "metodoPagamento": sale.tipoPagamento,
+        //     "statusPagamento": "REEMBOLSADO",
+        //     "statusVenda": "CANCELADO",
+        //     "tipoRecorrencia": sale.tipoRecorrencia,
+        //     "idCliente": sale.cliente.id,
+        //     "idVendedor": sale.vendedor,
+        //     "dataReembolso": dataReembolso
+        // };
 
         try {
             const apiUrl = import.meta.env.VITE_API_URL;
-            const response = await fetch(`${apiUrl}venda/editar/${sale.id}`, {
+            const response = await fetch(`${apiUrl}venda/marcar-reembolsado/${sale.id}`, {
                 method: 'PUT',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(payload),
             });
 
             if (!response.ok) {
@@ -678,7 +677,7 @@ const Relatorios = () => {
             }
 
             alert('Venda marcada como reembolsada com sucesso!');
-            fetchVendas(); // Refresh the list
+            fetchVendas();
             setRowActionMenu(null);
         } catch (error: any) {
             console.error('Erro ao marcar como reembolsado:', error);

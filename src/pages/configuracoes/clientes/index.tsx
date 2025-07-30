@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { IMaskInput, IMask } from 'react-imask';
 import styles from './styles.module.css';
-import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaSearch, FaSort, FaChevronLeft, FaChevronRight, FaFilePdf, FaFileExcel } from 'react-icons/fa';
+import { FaShoppingBag, FaBox, FaCog, FaBars, FaChevronDown, FaSearch, FaSort, FaChevronLeft, FaChevronRight, FaFilePdf, FaFileExcel, FaEdit, FaKey } from 'react-icons/fa';
 import { FaArrowRightFromBracket, FaFileExport } from 'react-icons/fa6';
 import logoImage from '../../../assets/img/df.png';
 import { useNavigate } from 'react-router-dom';
@@ -11,6 +11,19 @@ interface Cliente {
     nome: string;
     email: string;
     dataCriacao: string;
+    cpf?: string;
+    celular?: string;
+    permissao?: string;
+    endereco?: {
+        endereco: string;
+        numeroResidencia: string;
+        complementoEndereco: string;
+        bairro: string;
+        cidade: string;
+        uf: string;
+        cep: string;
+    };
+    status?: string;
 }
 
 const DateInput = ({ id, name, label, value, onChange }: { id: string, name: string, label: string, value: string, onChange: (e: React.ChangeEvent<HTMLInputElement>) => void }) => {
@@ -108,11 +121,96 @@ const Clientes: React.FC = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isExportMenuOpen, setExportMenuOpen] = useState(false);
     const exportMenuRef = useRef<HTMLDivElement>(null);
+    const [editingClient, setEditingClient] = useState<Cliente | null>(null);
+    const [newEmail, setNewEmail] = useState('');
+    const [isModalOpen, setIsModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const handleLogout = () => {
         localStorage.removeItem('authToken');
         navigate('/');
+    };
+
+    const handleUpdateEmail = async (client: Cliente) => {
+        setEditingClient(client);
+        setNewEmail(client.email);
+        setIsModalOpen(true);
+    };
+
+    const handleConfirmUpdateEmail = async () => {
+        if (!editingClient || !newEmail) return;
+
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token || !apiUrl) {
+            alert('Erro de configuração. Tente novamente mais tarde.');
+            return;
+        }
+
+        try {
+            const updatePayload = {
+                ...editingClient,
+                email: newEmail
+            };
+
+            const response = await fetch(`${apiUrl}usuario/atualizar/${editingClient.id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updatePayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Falha ao atualizar email.' }));
+                throw new Error(errorData.message || 'Falha ao atualizar email.');
+            }
+
+            // Atualizar a lista local
+            setAllClients(prev => prev.map(client => 
+                client.id === editingClient.id 
+                    ? { ...client, email: newEmail }
+                    : client
+            ));
+
+            alert('Email atualizado com sucesso!');
+            setIsModalOpen(false);
+            setEditingClient(null);
+            setNewEmail('');
+        } catch (error: any) {
+            console.error('Erro ao atualizar email:', error);
+            alert(`Erro ao atualizar email: ${error.message}`);
+        }
+    };
+
+    const handleResendPassword = async (clientId: number) => {
+        const token = localStorage.getItem('authToken');
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!token || !apiUrl) {
+            alert('Erro de configuração. Tente novamente mais tarde.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${apiUrl}usuario/reenviar-senha/${clientId}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Falha ao reenviar senha.' }));
+                throw new Error(errorData.message || 'Falha ao reenviar senha.');
+            }
+
+            alert('Nova senha enviada para o email do cliente!');
+        } catch (error: any) {
+            console.error('Erro ao reenviar senha:', error);
+            alert(`Erro ao reenviar senha: ${error.message}`);
+        }
     };
 
     useEffect(() => {
@@ -433,16 +531,17 @@ const Clientes: React.FC = () => {
                                     <th className={styles.sortable}>Nome do Cliente <FaSort /></th>
                                     <th className={styles.sortable}>e-mail <FaSort /></th>
                                     <th className={styles.sortable}>Data Cadastro <FaSort /></th>
+                                    <th>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {isLoading ? (
                                     <tr>
-                                        <td colSpan={3} className={styles.loadingCell}>Carregando clientes...</td>
+                                        <td colSpan={4} className={styles.loadingCell}>Carregando clientes...</td>
                                     </tr>
                                 ) : clientes.length === 0 ? (
                                     <tr>
-                                        <td colSpan={3} className={styles.noDataCell}>Nenhum cliente encontrado.</td>
+                                        <td colSpan={4} className={styles.noDataCell}>Nenhum cliente encontrado.</td>
                                     </tr>
                                 ) : (
                                     clientes.map((client) => {
@@ -452,6 +551,24 @@ const Clientes: React.FC = () => {
                                                 <td>{client.nome}</td>
                                                 <td className={styles.urlText}>{client.email}</td>
                                                 <td>{formattedDate}</td>
+                                                <td>
+                                                    <div className={styles.actionButtons}>
+                                                        <button 
+                                                            className={styles.actionBtn} 
+                                                            onClick={() => handleUpdateEmail(client)}
+                                                            title="Atualizar Email"
+                                                        >
+                                                            <FaEdit />
+                                                        </button>
+                                                        <button 
+                                                            className={styles.actionBtn} 
+                                                            onClick={() => handleResendPassword(client.id)}
+                                                            title="Reenviar Senha"
+                                                        >
+                                                            <FaKey />
+                                                        </button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         );
                                     })
@@ -485,6 +602,45 @@ const Clientes: React.FC = () => {
                     </div>
                 </div>
             </main>
+            
+            {/* Modal para editar email */}
+            {isModalOpen && (
+                <div className={styles.modalOverlay}>
+                    <div className={styles.modal}>
+                        <h3>Atualizar Email do Cliente</h3>
+                        <p><strong>Cliente:</strong> {editingClient?.nome}</p>
+                        <div className={styles.modalField}>
+                            <label htmlFor="newEmail">Novo Email:</label>
+                            <input
+                                type="email"
+                                id="newEmail"
+                                value={newEmail}
+                                onChange={(e) => setNewEmail(e.target.value)}
+                                className={styles.modalInput}
+                            />
+                        </div>
+                        <div className={styles.modalActions}>
+                            <button 
+                                className={styles.modalBtnCancel} 
+                                onClick={() => {
+                                    setIsModalOpen(false);
+                                    setEditingClient(null);
+                                    setNewEmail('');
+                                }}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                className={styles.modalBtnConfirm} 
+                                onClick={handleConfirmUpdateEmail}
+                                disabled={!newEmail || newEmail === editingClient?.email}
+                            >
+                                Atualizar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

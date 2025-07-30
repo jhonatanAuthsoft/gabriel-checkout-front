@@ -719,3 +719,139 @@ body.noScroll {
         height: 100px;
     }
 }
+
+/* Estilos para seção de upsells */
+.upsellSection {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border-radius: 16px;
+    padding: 24px;
+    margin: 24px 0;
+    border: 2px solid #e2e8f0;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.upsellTitle {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1e293b;
+    margin-bottom: 8px;
+    text-align: center;
+}
+
+.upsellSubtitle {
+    font-size: 16px;
+    color: #64748b;
+    text-align: center;
+    margin-bottom: 24px;
+}
+
+.upsellGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.upsellCard {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    border: 2px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.upsellCard:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 8px 25px -5px rgba(59, 130, 246, 0.25);
+    transform: translateY(-2px);
+}
+
+.upsellCardSelected {
+    border-color: #10b981;
+    background: linear-gradient(135deg, #ecfdf5 0%, #f0fdf4 100%);
+    box-shadow: 0 8px 25px -5px rgba(16, 185, 129, 0.25);
+}
+
+.upsellCardHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.upsellCheckbox {
+    width: 20px;
+    height: 20px;
+    accent-color: #10b981;
+    cursor: pointer;
+}
+
+.upsellProductName {
+    font-size: 18px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 0;
+    flex: 1;
+}
+
+.upsellDetails {
+    margin-bottom: 16px;
+}
+
+.upsellPlanName {
+    font-size: 14px;
+    color: #64748b;
+    margin: 0 0 8px 0;
+}
+
+.upsellPrice {
+    font-size: 20px;
+    font-weight: 700;
+    color: #059669;
+    margin: 0;
+}
+
+.upsellBadge {
+    display: inline-block;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+.upsellCard .upsellBadge {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.upsellCardSelected .upsellBadge {
+    background: #10b981;
+    color: white;
+}
+
+@media (max-width: 768px) {
+    .upsellSection {
+        padding: 16px;
+        margin: 16px 0;
+    }
+    
+    .upsellTitle {
+        font-size: 20px;
+    }
+    
+    .upsellGrid {
+        grid-template-columns: 1fr;
+    }
+    
+    .upsellCard {
+        padding: 16px;
+    }
+    
+    .upsellProductName {
+        font-size: 16px;
+    }
+}

@@ -16,6 +16,22 @@ interface Pergunta {
     resposta: string;
 }
 
+interface Upsell {
+    produto: {
+        id: string;
+        dadosProduto: {
+            dadosGerais: {
+                nome: string;
+            }
+        }
+    };
+    plano: {
+        id: number;
+        nome: string;
+        preco: number;
+    };
+}
+
 interface OrderSummaryProps {
     imagens: Imagem[];
     productName?: string;
@@ -33,6 +49,9 @@ interface OrderSummaryProps {
     quantity: number;
     onQuantityChange: (quantity: number) => void;
     perguntas: Pergunta[];
+    selectedUpsells?: {[key: string]: boolean};
+    upsellsPrice?: number;
+    upsellsData?: Upsell[];
 }
 
 const OrderSummary: React.FC<OrderSummaryProps> = ({
@@ -52,6 +71,9 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
     quantity,
     onQuantityChange,
     perguntas,
+    selectedUpsells = {},
+    upsellsPrice = 0,
+    upsellsData = [],
 }) => {
     const formatCurrency = (value: number) => {
         return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -83,6 +105,34 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                     </div>
                 </div>
                 
+                {/* Seção de Upsells Selecionados */}
+                {Object.keys(selectedUpsells).some(key => selectedUpsells[key]) && (
+                    <div className={styles.upsellsSection}>
+                        <h4>Produtos Adicionais</h4>
+                        {upsellsData.map((upsell) => {
+                            const upsellKey = `${upsell.produto.id}-${upsell.plano.id}`;
+                            if (selectedUpsells[upsellKey]) {
+                                return (
+                                    <div key={upsellKey} className={styles.upsellItem}>
+                                        <div className={styles.upsellDetails}>
+                                            <span className={styles.upsellName}>
+                                                {upsell.produto.dadosProduto.dadosGerais.nome}
+                                            </span>
+                                            <span className={styles.upsellPlan}>
+                                                {upsell.plano.nome}
+                                            </span>
+                                        </div>
+                                        <span className={styles.upsellPrice}>
+                                            {formatCurrency(upsell.plano.preco)}
+                                        </span>
+                                    </div>
+                                );
+                            }
+                            return null;
+                        })}
+                    </div>
+                )}
+                
                 <div className={styles.couponSection}>
                     <label>Cupom de Desconto</label>
                     <div className={styles.couponInput}>
@@ -101,6 +151,12 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
                         <span>Subtotal</span>
                         <span>{formatCurrency(price)}</span>
                     </div>
+                    {upsellsPrice > 0 && (
+                        <div className={styles.orderRow}>
+                            <span>Produtos Adicionais</span>
+                            <span>{formatCurrency(upsellsPrice)}</span>
+                        </div>
+                    )}
                     <div className={styles.orderRow}>
                         <span>Entrega</span>
                         <span className={styles.deliveryInfo}>A entrega é realizada de forma  instantânea no seu e-mail após a compra</span>
