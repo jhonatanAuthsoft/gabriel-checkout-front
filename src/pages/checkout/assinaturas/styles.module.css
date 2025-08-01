@@ -374,19 +374,6 @@ body.no-scroll {
     letter-spacing: 0.5px;
 }
 
-.statusProduto.ATIVA {
-    background-color: #0070E1;
-    color: white;
-}
-
-.statusProduto.concluido {
-    color: #79CC5B;
-}
-
-.statusProduto.processando {
-    color: #0070E1;
-}
-
 .actionsBtn {
     font-size: 25px;
     cursor: pointer;
@@ -403,6 +390,7 @@ body.no-scroll {
 }
 
 .actionsContainer {
+    position: relative;
     display: flex;
     align-items: center;
     margin-left: 10px;
@@ -410,7 +398,9 @@ body.no-scroll {
 
 .actionsMenu {
     display: none;
-    position: fixed;
+    position: absolute;
+    top: 100%;
+    right: 0;
     background-color: white;
     border-radius: 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
@@ -958,6 +948,137 @@ body.no-scroll {
     }
 }
 
+/* Estilos para PIX */
+.pixPayment {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.pixPayment h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.qrCodeContainer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 15px 0;
+}
+
+.qrCodeContainer img {
+    max-width: 200px;
+    height: auto;
+    border-radius: 4px;
+}
+
+.pixCopyPaste {
+    margin-top: 20px;
+}
+
+.pixCopyPaste label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #495057;
+}
+
+.pixCopyPaste textarea,
+.pixTextarea {
+    width: 100%;
+    height: 80px;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 12px;
+    resize: vertical;
+    background-color: #f8f9fa;
+    margin: 10px 0;
+}
+
+.pixCopyPaste button,
+.pixCopyButton {
+    padding: 12px 24px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.3s;
+    margin-top: 10px;
+}
+
+.pixCopyPaste button:hover,
+.pixCopyButton:hover {
+    background-color: #0056b3;
+}
+
+.pixStatus {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.pixStatus.checking {
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffeaa7;
+}
+
+.pixStatus.paid {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+/* Estilos para Boleto */
+.boletoPayment {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.boletoPayment h4 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.boletoPayment p {
+    margin: 10px 0;
+}
+
+.boletoPayment a {
+    display: inline-block;
+    padding: 12px 24px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: background-color 0.3s;
+}
+
+.boletoPayment a:hover {
+    background-color: #1e7e34;
+}
+
 @media screen and (max-width: 360px) {
     .orderByWrapper {
         font-size: 12px;
@@ -1334,9 +1455,23 @@ body.no-scroll {
 .input {
     width: 100%;
     padding: 10px;
-    border-radius: 5px;
     border: 1px solid #ccc;
-    font-size: 14px;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.inputWrapper {
+    position: relative;
+    width: 100%;
+}
+
+.cardIcon {
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 24px;
+    color: #888;
 }
 
 .inputArea {

@@ -9,7 +9,8 @@ import { useNavigate } from 'react-router-dom';
 interface Venda {
     id: number;
     codigo: string;
-    produto: { nome: string, id: string };
+    produtos: { nome: string, id: string }[];
+    planos: { nome: string, id: string }[];
     dataCriacao: string;
     dataAtualizacao: string;
     cliente: { nome: string, id: string };
@@ -284,10 +285,14 @@ const Relatorios = () => {
             const vendasMapeadas = (data.content || []).map((venda: any) => ({
                 id: venda.id,
                 codigo: venda.codigoSolicitacao,
-                produto: {
-                    nome: venda.produto?.dadosProduto?.dadosGerais?.nome || 'N/A',
-                    id: venda.produto?.id || '',
-                },
+                produtos: venda.produtos?.map((produto: any) => ({
+                    nome: produto.dadosProduto?.dadosGerais?.nome || 'N/A',
+                    id: produto.id || '',
+                })) || [],
+                planos: venda.planos?.map((plano: any) => ({
+                    nome: plano.nome || 'N/A',
+                    id: plano.id || '',
+                })) || [],
                 dataCriacao: venda.dataCompra,
                 dataAtualizacao: venda.dataAtualizacao,
                 dataPagamento: venda.dataPagamento,
@@ -334,7 +339,7 @@ const Relatorios = () => {
             setTipoVendaOptions(getUniqueValues(v => v.tipoVenda));
             setMetodoPagamentoOptions(getUniqueValues(v => v.tipoPagamento));
             setOrigemVendaOptions(getUniqueValues(v => v.origemVenda));
-            setProdutoNomeOptions(getUniqueValues(v => v.produto.nome));
+            setProdutoNomeOptions(getUniqueValues(v => v.produtos.map(p => p.nome).join(', ')));
             setMoedaOptions(getUniqueValues(v => v.moeda));
         }
     }, [allVendas]);
@@ -355,7 +360,7 @@ const Relatorios = () => {
                 if (metodoPagamento && venda.tipoPagamento !== metodoPagamento) return false;
                 if (origemVenda && venda.origemVenda !== origemVenda) return false;
                 if (cpfCnpj && !venda.cpfCnpj?.includes(cpfCnpj)) return false;
-                if (produtoNome && !venda.produto.nome?.toLowerCase().includes(produtoNome.toLowerCase())) return false;
+                if (produtoNome && !venda.produtos.some(p => p.nome?.toLowerCase().includes(produtoNome.toLowerCase()))) return false;
                 if (cupom && !venda.cupom?.toLowerCase().includes(cupom.toLowerCase())) return false;
                 if (moeda && venda.moeda !== moeda) return false;
 
@@ -910,7 +915,30 @@ const Relatorios = () => {
                                                 />
                                             </td>
                                             <td>{sale.id}</td>
-                                            <td>{sale.produto?.nome || 'N/A'}</td>
+                                            <td>
+                                                {sale.produtos.length > 0 ? (
+                                                    <div>
+                                                        <div style={{ fontWeight: '600', marginBottom: '4px' }}>
+                                                            {sale.produtos[0]?.nome || 'Produto Indisponível'}
+                                                            {sale.planos[0] && ` - ${sale.planos[0].nome}`}
+                                                        </div>
+                                                        {sale.produtos.length > 1 && (
+                                                            <div style={{ fontSize: '12px', color: '#666', marginTop: '8px' }}>
+                                                                <div style={{ fontWeight: '500', marginBottom: '4px' }}>+ Produtos Adicionais:</div>
+                                                                {sale.produtos.slice(1).map((produto, index) => {
+                                                                    const planoUpsell = sale.planos[index + 1];
+                                                                    return (
+                                                                        <div key={index} style={{ marginLeft: '8px', marginBottom: '2px' }}>
+                                                                            • {produto?.nome || 'Produto Indisponível'}
+                                                                            {planoUpsell && ` - ${planoUpsell.nome}`}
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ) : 'N/A'}
+                                            </td>
                                             <td>{formatDate(sale.dataCriacao)}</td>
                                             <td>{formatDate(sale.dataPagamento)}</td>
                                             <td>{sale.cliente?.nome || 'N/A'}</td>

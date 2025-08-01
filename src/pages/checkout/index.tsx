@@ -131,6 +131,7 @@ const Checkout: React.FC = () => {
     const [idVenda, setIdVenda] = useState<string | null>(null);
     const [pixData, setPixData] = useState<{ qrCode: string, copiaECola: string } | null>(null);
     const [boletoData, setBoletoData] = useState<string | null>(null);
+    const [boletoMessage, setBoletoMessage] = useState<string | null>(null);
     const [urlObrigado, setUrlObrigado] = useState<string | null>(null);
 
         const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -285,9 +286,10 @@ const Checkout: React.FC = () => {
                         if (data?.statusPagamento === 'APROVADO') {
                             clearInterval(interval);
                             if (urlObrigado) {
-                                window.open(formatUrl(urlObrigado), '_blank');
+                                window.location.href = formatUrl(urlObrigado);
+                            } else {
+                                navigate('/');
                             }
-                            navigate('/');
                         }
                     }
                 } catch (error) {
@@ -343,6 +345,7 @@ const Checkout: React.FC = () => {
                     setPixData({ qrCode: paymentData.location, copiaECola: paymentData.pixCopiaECola });
                 } else if (method === 'boleto') {
                     setBoletoData(paymentData.pdf);
+                    setBoletoMessage('Boleto gerado com sucesso! Verifique seu e-mail.');
                 }
             } catch (e) {
                 throw new Error(`Falha ao processar a resposta do pagamento: ${responseText}`);
@@ -529,10 +532,6 @@ const Checkout: React.FC = () => {
             }
 
             if (boletoData) {
-                if (urlObrigado) {
-                    window.open(formatUrl(urlObrigado), '_blank');
-                }
-                navigate('/');
                 return;
             }
 
@@ -623,6 +622,7 @@ const Checkout: React.FC = () => {
                         setBoletoData={setBoletoData}
                         pixData={pixData}
                         boletoData={boletoData}
+                        boletoMessage={boletoMessage}
                         numeroCartao={numeroCartao}
                         setNumeroCartao={setNumeroCartao}
                         nomeImpresso={nomeImpresso}

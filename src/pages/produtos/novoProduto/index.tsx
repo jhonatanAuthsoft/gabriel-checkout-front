@@ -31,7 +31,7 @@ const NovoProduto: React.FC = () => {
             },
             cobranca: {
                 tipoCobranca: 'UNICA',
-                periodicidade: 'MENSAL',
+                peridiocidade: 'MENSAL',
                 preco: 0,
                 gratis: false,
                 tipoPrimeiraParcela: 'IGUAL',
@@ -137,7 +137,7 @@ const NovoProduto: React.FC = () => {
         }
     }, [produtoData.dadosProduto.cobranca.gratis]);
 
-    const initialPlanoState = { nome: '', periodicidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '', status: 'ATIVO' };
+    const initialPlanoState = { nome: '', peridiocidade: 'MENSAL', descricao: '', preco: 0, gratis: false, primeiraParcela: 'IGUAL', recorrencia: '', sku: '', status: 'ATIVO' };
     const [newPlano, setNewPlano] = useState(initialPlanoState);
 
     const initialCupomState = { codigoCupom: '', tipoDesconto: 'PERCENTUAL', valor: 0, url: '' };
@@ -1000,10 +1000,10 @@ const NovoProduto: React.FC = () => {
                                             {tipoCobranca === 'recorrente' && (
                                                 <div className={styles.inputGroup}>
                                                     <div className={styles.selectWrapper}>
-                                                        <label className={styles.label} htmlFor="periodicidade">
-                                                            Periodicidade
+                                                        <label className={styles.label} htmlFor="peridiocidade">
+                                                            Peridiocidade
                                                         </label>
-                                                        <select className={styles.filterSelect} name="dadosProduto.cobranca.periodicidade" value={produtoData.dadosProduto.cobranca.periodicidade} onChange={(e) => handleInputChange(e.target.name, e.target.value)}>
+                                                        <select className={styles.filterSelect} name="dadosProduto.cobranca.peridiocidade" value={produtoData.dadosProduto.cobranca.peridiocidade} onChange={(e) => handleInputChange(e.target.name, e.target.value)}>
                                                             <option value="MENSAL">Mensal</option>
                                                             <option value="BIMESTRAL">Bimestral</option>
                                                             <option value="TRIMESTRAL">Trimestral</option>
@@ -1591,16 +1591,16 @@ const NovoProduto: React.FC = () => {
                                                 <div className={styles.dataCol}>
                                                     <div className={styles.radioSection}>
                                                         <div className={styles.radioTop}>
-                                                            <label className={styles.label}>Periodicidade</label>
+                                                            <label className={styles.label}>Peridiocidade</label>
                                                         </div>
                                                         <div className={styles.radioBody}>
                                                             <label className={styles.radioButton}>
                                                                 <input
                                                                     type="radio"
-                                                                    name="periodicidade"
+                                                                    name="peridiocidade"
                                                                     value="MENSAL"
-                                                                    checked={newPlano.periodicidade === 'MENSAL'}
-                                                    onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
+                                                                    checked={newPlano.peridiocidade === 'MENSAL'}
+                                                    onChange={(e) => setNewPlano(p => ({...p, peridiocidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
                                                                 Mensal
@@ -1610,7 +1610,7 @@ const NovoProduto: React.FC = () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="TRIMESTRAL"
-                                                                    checked={newPlano.periodicidade === 'TRIMESTRAL'}
+                                                                    checked={newPlano.peridiocidade === 'TRIMESTRAL'}
                                                     onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
@@ -1621,7 +1621,7 @@ const NovoProduto: React.FC = () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="SEMESTRAL"
-                                                                    checked={newPlano.periodicidade === 'SEMESTRAL'}
+                                                                    checked={newPlano.peridiocidade === 'SEMESTRAL'}
                                                     onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
@@ -1632,7 +1632,7 @@ const NovoProduto: React.FC = () => {
                                                                     type="radio"
                                                                     name="periodicidade"
                                                                     value="ANUAL"
-                                                                    checked={newPlano.periodicidade === 'ANUAL'}
+                                                                    checked={newPlano.peridiocidade === 'ANUAL'}
                                                     onChange={(e) => setNewPlano(p => ({...p, periodicidade: e.target.value}))}
                                                                 />
                                                                 <span className={styles.radio} />
@@ -1733,7 +1733,7 @@ const NovoProduto: React.FC = () => {
                                                         <thead>
                                                             <tr>
                                                                 <th className={styles.sortable}>Nome</th>
-                                                                <th className={styles.sortable}>Periodicidade</th>
+                                                                <th className={styles.sortable}>Peridiocidade</th>
                                                                 <th className={styles.sortable}>URL Checkout</th>
                                                                 <th className={styles.sortable}>Ativo</th>
                                                                 <th className={styles.sortable}>Privado</th>
@@ -1750,7 +1750,7 @@ const NovoProduto: React.FC = () => {
                                                                     </button>
                                                                         {plano.nome}
                                                                 </td>
-                                                                    <td>{plano.periodicidade}</td>
+                                                                    <td>{plano.peridiocidade}</td>
                                                                 <td>
                                                                     <div className={styles.urlCheckoutContainer}>
                                                                             <input

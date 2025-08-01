@@ -12,6 +12,7 @@ interface PaymentFormProps {
     pixData: { qrCode: string, copiaECola: string } | null;
     setPixData: React.Dispatch<React.SetStateAction<{ qrCode: string, copiaECola: string } | null>>;
     boletoData: string | null;
+    boletoMessage: string | null;
     setBoletoData: React.Dispatch<React.SetStateAction<string | null>>;
     numeroCartao: string;
     setNumeroCartao: (value: string) => void;
@@ -33,6 +34,7 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
     setPaymentMethod,
     pixData,
     boletoData,
+    boletoMessage,
     numeroCartao, setNumeroCartao,
     nomeImpresso, setNomeImpresso,
     dataVencimento, setDataVencimento,
@@ -167,7 +169,8 @@ const PaymentForm: React.FC<PaymentFormProps> = ({
                     )}
                 </div>
 
-                <div id="boletoForm" className={`${styles.paymentForm} ${styles.pixBoletoContent} ${paymentMethod === 'boleto' ? styles.active : ''}`}>
+                                <div id="boletoForm" className={`${styles.paymentForm} ${styles.pixBoletoContent} ${paymentMethod === 'boleto' ? styles.active : ''}`}>
+                     {boletoMessage && <p className={styles.successMessage}>{boletoMessage}</p>}
                      {boletoData ? (
                         <div className={styles.boletoContainer}>
                             <p>Seu boleto foi gerado com sucesso.</p>
